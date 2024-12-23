@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MorseT</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/design.css') }}">
+</head>
+<body>
+    <div id="menuPanel" class="menu-panel">
+        <div class="vessel-btn all-channels" data-vessel="All" style="color: #fff;">All Channels</div>
+        {% for vessel in vessels %}
+        <div class="vessel-btn" data-vessel="{{ vessel }}" style="color: #fff;">{{ vessel }}</div>
+        {% endfor %}
+    </div>
+
+    <div id="mainContent" class="main-content">
+        <div class="header">
+            <button class="menu-btn" aria-label="Toggle Menu">MENU</button>
+            <span id="currentChannel">{{ current_channel }}</span>
+            <a href="{{ url_for('logout') }}" class="menu-btn" style="margin-left: auto;">LOGOUT</a>
+        </div>
+
+        <div class="chat-area">
+            {% for message in messages|reverse %}
+            <div class="message-group">
+                {% if message.message_received != '[No Message Received]' %}
+                <div class="message-bubble message-received">
+                    <div class="message-content">{{ message.message_received }}</div>
+                </div>
+                {% endif %}
+                
+                {% if message.message_received == '[No Message Received]' and message.message_sent and message.message_sent != '[No Message Sent]' %}
+                <div class="message-bubble message-sent">
+                    <div class="message-content">{{ message.message_sent }}</div>
+                </div>
+                {% endif %}
+
+                {% if message.message_received != '[No Message Received]' and message.message_sent and message.message_sent != '[No Message Sent]' %}
+                <div class="message-bubble message-sent">
+                    <div class="message-content">Response: {{ message.message_sent }}</div>
+                </div>
+                {% endif %}
+                
+                <div class="timestamp {% if message.message_sent and message.message_sent != '[No Message Sent]' %}timestamp-sent{% else %}timestamp-received{% endif %}">
+                    {{ message.formatted_time }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- emergency words -->
+        <div class="expanded-panel" id="expandedPanel" style="display: none;">
+            <div class="panel-content">
+                <div class="quick-messages">
+                    <button class="quick-msg-btn">SOS</button>
+                    <button class="quick-msg-btn">MAYDAY</button>
+                    <button class="quick-msg-btn">WARNING</button>
+                    <button class="quick-msg-btn">REQUESTING ASSISTANCE</button>
+                    <button class="quick-msg-btn">ACKNOWLEDGED</button>
+                    <button class="quick-msg-btn">MAINTAINING COURSE</button>
+                    <button class="quick-msg-btn">POSITION UPDATE</button>
+                    <button class="quick-msg-btn">CHANGING COURSE</button>
+                    <button class="quick-msg-btn">ALL CLEAR</button>
+                    <button class="quick-msg-btn">STANDING BY</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- duration slider -->
+        <div class="expanded-panel" id="durationPanel" style="display: none;">
+            <div class="panel-content">
+                <p id="speedDisplay">Speed: Normal</p>
+                <p id="settingDisplay">Current Setting: 100ms</p>
+                <br>
+                <div class="slidecontainer">
+                    <input type="range" min="50" max="500" step="50" value="100" class="slider" id="durationSlider">
+                </div>
+                <div class="slider-labels">
+                    <span class="slider-label">50ms (Fast)</span>
+                    <span class="slider-label">500ms (Very Slow)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- repeat slider -->
+        <div class="expanded-panel" id="repeatPanel" style="display: none;">
+            <div class="panel-content">
+                <p id="settingDisplay2">Repeat: 1 time</p>  <!-- Display element for repeat text -->
+                <br>
+                <div class="slidecontainer">
+                    <input type="range" min="1" max="10" step="1" value="1" class="slider" id="repeatSlider"> <!-- Repeat slider -->
+                </div>
+                <div class="slider-labels">
+                    <span class="slider-label">1</span>
+                    <span class="slider-label">10</span>
+                </div>
+            </div>
+        </div>
+
+        
+        <div class="input-container">
+            <button class="arrow-up-btn" id="expandBtn">↑</button>
+            <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off">
+            <button class="duration-btn" id="expandDRBtn">ೱ</button>
+            <button class="repeat-btn" id="expandRBtn">↻</button>
+            <button class="send-btn">Send</button>
+        </div>
+
+        <div class="keyboard">
+            <div class="keyboard-row">
+                {% for key in '1234567890' %}
+                <button class="key" data-key="{{ key }}">{{ key }}</button>
+                {% endfor %}
+            </div>
+            <div class="keyboard-row">
+                {% for key in 'QWERTYUIOP' %}
+                <button class="key" data-key="{{ key }}">{{ key }}</button>
+                {% endfor %}
+            </div>
+            <div class="keyboard-row">
+                {% for key in 'ASDFGHJKL' %}
+                <button class="key" data-key="{{ key }}">{{ key }}</button>
+                {% endfor %}
+                <button class="key delete" data-key="delete">DELETE</button>
+            </div>
+            <div class="keyboard-row">
+                {% for key in 'ZXCVBNM,.' %}
+                <button class="key" data-key="{{ key }}">{{ key }}</button>
+                {% endfor %}
+                <button class="key space" data-key="space">SPACE</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/design.js') }}"></script>
+</body>
+</html>
