@@ -7,7 +7,7 @@ from datetime import datetime
 import pytz
 from cryptography.fernet import Fernet
 import bcrypt
-
+import socket
 def load_config():
     """Load the config file containing hashed passwords."""
     with open("config.json", "r") as file:
@@ -30,7 +30,31 @@ class FlaskMorseApp:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         db_path = os.path.join(current_dir, 'SQLite Database', 'morse_decoder.db')
         return MorseDBHandler(db_path)
-    
+
+    def send_to_esp32(self, message_data):
+        """Send data to ESP32 via TCP socket."""
+        try:
+            # Create a TCP/IP socket
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            # Connect to ESP32
+            server_address = ('192.168.1.169', 8888)  
+            sock.settimeout(5)  # Set timeout to 5 seconds
+            sock.connect(server_address)
+            
+            try:
+                # Send data
+                message_json = json.dumps(message_data)
+                sock.sendall(message_json.encode())
+                return True, "Message sent successfully"
+            except socket.timeout:
+                return False, "Connection timed out"
+            except Exception as e:
+                return False, f"Error sending message: {str(e)}"
+            finally:
+                sock.close()
+        except Exception as e:
+            return False, f"Connection error: {str(e)}"
+        
     def setup_routes(self):
         """Set up all Flask routes."""
         
