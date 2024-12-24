@@ -120,6 +120,37 @@ document.addEventListener('DOMContentLoaded', function() {
     const menuBtn = document.querySelector('.menu-btn');
     const menuPanel = document.getElementById('menuPanel');
     const mainContent = document.getElementById('mainContent');
+    const rightPanel = document.getElementById('rightPanel');
+    const rightPanelToggle = document.getElementById('rightPanelToggle');
+    let rightPanelOpen = false;
+
+    if (rightPanelToggle) {  // Check if element exists
+        rightPanelToggle.addEventListener('click', function(event) {
+            event.stopPropagation();
+            rightPanelOpen = !rightPanelOpen;
+            
+            if (rightPanel) {
+                rightPanel.classList.toggle('active');
+                mainContent.classList.toggle('shifted-right');
+                
+                // Change arrow direction
+                rightPanelToggle.textContent = rightPanelOpen ? '→' : '←';
+            }
+        });
+
+        // Close panel when clicking outside
+        document.addEventListener('click', function(event) {
+            if (rightPanelOpen && 
+                rightPanel && 
+                !rightPanel.contains(event.target) && 
+                !rightPanelToggle.contains(event.target)) {
+                rightPanelOpen = false;
+                rightPanel.classList.remove('active');
+                mainContent.classList.remove('shifted-right');
+                rightPanelToggle.textContent = '←';
+            }
+        });
+    }
     const currentChannelDisplay = document.getElementById('currentChannel');
     let menuOpen = false;
 
