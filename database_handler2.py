@@ -137,7 +137,7 @@ class MorseDBHandler:
             self.logger.error(f"Error saving message: {str(e)}")
             return False
 
-    def get_messages(self, vessel_sender=None, vessel_recipient=None, limit=100):
+    def get_messages(self, vessel_sender=None, vessel_recipient=None, limit=None):
         self.logger.info(f"Retrieving messages for sender: {vessel_sender} and recipient: {vessel_recipient}")
         try:
             with sqlite3.connect(self.db_path, timeout=20) as conn:
@@ -155,8 +155,12 @@ class MorseDBHandler:
 
                 if conditions:
                     query += "WHERE " + " AND ".join(conditions)
-                query += " ORDER BY timestamp DESC LIMIT ?"
-                params.append(limit)
+                query += " ORDER BY timestamp DESC"
+                #params.append(limit)
+
+                if limit:
+                    query += " LIMIT ?"
+                    params.append(limit)
 
                 cursor.execute(query, tuple(params))
                 messages = []

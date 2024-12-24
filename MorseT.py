@@ -230,8 +230,8 @@ class FlaskMorseApp:
     
     def get_messages(self):
         """Retrieve all messages from database."""
-        messages = self.db.get_messages()
-        messages.sort(key=lambda x: x['timestamp'])
+        messages = self.db.get_messages(limit=None)
+        #messages.sort(key=lambda x: x['timestamp'])
         return messages
     
     def run(self, debug=True, host='0.0.0.0', port=5000):
