@@ -8,11 +8,6 @@ import pytz
 from cryptography.fernet import Fernet
 import bcrypt
 import socket
-def load_config():
-    """Load the config file containing hashed passwords."""
-    with open("config.json", "r") as file:
-        config = json.load(file)
-    return config
 
 class FlaskMorseApp:
     def __init__(self):
@@ -20,16 +15,16 @@ class FlaskMorseApp:
         self.app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_fallback_key')
         self.app.config['SESSION_TYPE'] = 'filesystem'
         setup_js_route(self.app)
-        self.config = load_config()
         self.db = self.initialize_database()
         self.timezone = pytz.timezone('Asia/Singapore')
         self.setup_routes()
     
     def initialize_database(self):
         """Initialize the database connection."""
+        key_file = os.path.join(os.path.dirname(__file__), "SQLite Database/key.txt")  
         current_dir = os.path.dirname(os.path.abspath(__file__))
         db_path = os.path.join(current_dir, 'SQLite Database', 'morse_decoder.db')
-        return MorseDBHandler(db_path)
+        return MorseDBHandler(db_path, key_file)
 
     def send_to_esp32(self, message_data):
         """Send data to ESP32 via TCP socket."""
@@ -63,15 +58,18 @@ class FlaskMorseApp:
             if request.method == 'POST':
                 username = request.form['username']
                 password = request.form['password']
-                user_password_hash = self.config['users'].get(username)
                 
+                # Fetch the encrypted password from the database
+                user_password_hash = self.db.get_user_password_hash(username)
+                
+                # Verify password using bcrypt
                 if user_password_hash and bcrypt.checkpw(password.encode(), user_password_hash.encode()):
                     session['user'] = username
-                    session['menu_state'] = False  
+                    session['menu_state'] = False  # Menu state for user session
                     return redirect(url_for('index'))
                 else:
                     return render_template('auth.html', error_message="Invalid credentials")
-                    
+                        
             return render_template('auth.html')
         
         @self.app.route('/logout')

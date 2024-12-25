@@ -8,6 +8,7 @@
 </head>
 <body>
     <div id="menuPanel" class="menu-panel">
+        <div class="search"><form action="#"><input type="text" placeholder="Search Vessels.." name="search"></form></div>
         <div class="vessel-btn all-channels" data-vessel="All" style="color: #fff;">All Channels</div>
         {% for vessel in vessels %}
         <div class="vessel-btn" data-vessel="{{ vessel }}" style="color: #fff;">{{ vessel }}</div>
@@ -107,7 +108,6 @@
             </div>
         </div>
 
-        
         <div class="input-container">
             <button class="arrow-up-btn" id="expandBtn">↑</button>
             <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off">

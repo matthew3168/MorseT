@@ -76,6 +76,17 @@ body {
     background: #f0f0f0;
 }
 
+.search input[type="text"] {
+    width: 100%;
+    padding: 6px 6px 6px 20px;
+    background-color: transparent;
+    border-radius: 4px;
+    border: none;
+    font-size: 12px;
+    border-radius: 4px;
+    color: #fff;
+    outline: none;
+}
 
 /* Update chat-area class */
 .chat-area {

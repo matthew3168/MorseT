@@ -69,6 +69,91 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
+    // Menu search functionality
+    const searchInput = document.querySelector('.search input[type="text"]');
+    const messageInput = document.getElementById('messageInput');
+    const vesselBtns = document.querySelectorAll('.vessel-btn');
+
+    let activeInput = searchInput;
+
+    // Focus on the search input when 'Tab' is pressed
+    searchInput.addEventListener('focus', () => {
+        activeInput = searchInput;
+    });
+
+    messageInput.addEventListener('focus', () => {
+        activeInput = messageInput;
+    });
+
+    // Listen for keydown event to toggle between inputs
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Tab') {
+            event.preventDefault();  // Prevent default tab behavior
+            
+            // Switch between search input and message input
+            if (activeInput === searchInput) {
+                messageInput.focus();
+                activeInput = messageInput;
+            } else {
+                searchInput.focus();
+                activeInput = searchInput;
+            }
+        }
+    });
+
+    // Handle virtual keyboard input
+    document.querySelectorAll('.key').forEach(key => {
+        key.addEventListener('click', function(event) {
+            event.stopPropagation();  // Prevent the click from bubbling up and closing panels
+
+            const keyText = this.textContent;
+            const activeInputField = activeInput;  // Get the active input field (search or message)
+
+            if (this.classList.contains('delete')) {
+                activeInputField.value = activeInputField.value.slice(0, -1);  // Remove last character
+            } else if (this.classList.contains('space')) {
+                activeInputField.value += ' ';  // Add space
+            } else {
+                activeInputField.value += keyText;  // Add key text
+            }
+
+            activeInputField.focus();  // Keep focus on the active input field
+
+            // Trigger search filtering only when typing in the search input
+            if (activeInputField === searchInput) {
+                const searchQuery = searchInput.value.toLowerCase();
+                vesselBtns.forEach(btn => {
+                    const vesselName = btn.textContent.toLowerCase();
+                    if (vesselName.includes(searchQuery)) {
+                        btn.style.display = 'block';
+                    } else {
+                        btn.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Prevent default keydown event from triggering another input
+            event.preventDefault();
+        });
+    });
+
+
+    // Event listener for search input to filter vessel names (case-insensitive)
+    searchInput.addEventListener('input', function(event) {
+        // Get the search query (case-insensitive)
+        const searchQuery = searchInput.value.toLowerCase();
+        
+        vesselBtns.forEach(btn => {
+            const vesselName = btn.textContent.toLowerCase();
+            // Show or hide vessel buttons based on the search query
+            if (vesselName.includes(searchQuery)) {
+                btn.style.display = 'block';  // Show vessel
+            } else {
+                btn.style.display = 'none';   // Hide vessel
+            }
+        });
+    });
+
     // Duration Slider Functionality
     const slider = document.getElementById('durationSlider');
     const speedDisplay = document.getElementById('speedDisplay');
@@ -116,6 +201,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     });
 
+    // Vessel selection functionality
+    vesselBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            vesselBtns.forEach(b => b.classList.remove('selected'));
+            this.classList.add('selected');
+            
+            const vesselName = this.getAttribute('data-vessel');
+            currentChannelDisplay.textContent = vesselName;
+            
+            updateMessages(vesselName);
+            
+            if (window.innerWidth <= 768) {
+                menuOpen = false;
+                menuPanel.classList.remove('active');
+                mainContent.classList.remove('shifted');
+            }
+        });
+    });
+
     // Menu functionality
     const menuBtn = document.querySelector('.menu-btn');
     const menuPanel = document.getElementById('menuPanel');
@@ -138,19 +242,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Close panel when clicking outside
+        // Close panels except when clicking the keyboard
         document.addEventListener('click', function(event) {
-            if (rightPanelOpen && 
-                rightPanel && 
-                !rightPanel.contains(event.target) && 
-                !rightPanelToggle.contains(event.target)) {
-                rightPanelOpen = false;
-                rightPanel.classList.remove('active');
-                mainContent.classList.remove('shifted-right');
-                rightPanelToggle.textContent = '←';
+            if (!expandedPanel.contains(event.target) &&
+                !expandBtn.contains(event.target) &&
+                !durationPanel.contains(event.target) &&
+                !expandDRBtn.contains(event.target) &&
+                !repeatPanel.contains(event.target) &&
+                !expandRBtn.contains(event.target) &&
+                !keys.contains(event.target)) { // Don't close when clicking on keyboard keys
+                closeAllPanels();
             }
         });
     }
+
+
     const currentChannelDisplay = document.getElementById('currentChannel');
     let menuOpen = false;
 
@@ -158,7 +264,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const expandBtn = document.getElementById('expandBtn');
     const expandedPanel = document.getElementById('expandedPanel');
     const quickMsgBtns = document.querySelectorAll('.quick-msg-btn');
-    const messageInput = document.getElementById('messageInput');
     let isPanelOpen = false;
 
     // Menu button click handler
@@ -293,24 +398,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Virtual keyboard functionality
-    const keys = document.querySelectorAll('.key');
-    
-    keys.forEach(key => {
-        key.addEventListener('click', function() {
-            const keyText = this.textContent;
-            if (this.classList.contains('delete')) {
-                messageInput.value = messageInput.value.slice(0, -1);
-            } else if (this.classList.contains('space')) {
-                messageInput.value += ' ';
-            } else {
-                messageInput.value += keyText;
-            }
-            messageInput.focus();
-        });
-    });
-
-// Message sending functionality
+    // Message sending functionality
     const sendBtn = document.querySelector('.send-btn');
     
     function getCurrentChannel() {
@@ -414,26 +502,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Vessel selection functionality
-    const vesselBtns = document.querySelectorAll('.vessel-btn');
-    vesselBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            vesselBtns.forEach(b => b.classList.remove('selected'));
-            this.classList.add('selected');
-            
-            const vesselName = this.getAttribute('data-vessel');
-            currentChannelDisplay.textContent = vesselName;
-            
-            updateMessages(vesselName);
-            
-            if (window.innerWidth <= 768) {
-                menuOpen = false;
-                menuPanel.classList.remove('active');
-                mainContent.classList.remove('shifted');
-            }
-        });
-    });
-
     // Message sending functionality
     sendBtn.addEventListener('click', function() {
         // Get values from the input fields and sliders
@@ -452,28 +520,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Log the JSON message for debugging
             console.log("Created JSON message:", JSON.stringify(jsonMessage));
-
-            // You can send this JSON message via HTTP POST (this is commented for now)
-            // Example of sending to the ESP32 (replace URL with actual ESP32 endpoint)
-            /*
-            fetch('http://esp32-ip-address/send_message', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(jsonMessage)
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Message sent successfully:', data);
-            })
-            .catch(error => {
-                console.error('Error sending message:', error);
-            });
-            */
-
-            // Optionally clear the message input after sending
-            messageInput.value = '';
         }
     });
 

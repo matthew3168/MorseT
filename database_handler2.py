@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import logging
+import bcrypt
 from datetime import datetime
 import pytz
 from cryptography.fernet import Fernet, InvalidToken
@@ -18,21 +19,35 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class MorseDBHandler:
-    # Predefined static encryption key
-    PREDEFINED_KEY = b'd99vdna1RPR21BrXlXL5CVVSQVVAEsLqXgNU22v_Xwk='
-
-    def __init__(self, db_path):
+    def __init__(self, db_path, key_file):
         """Initialize database handler with encryption"""
         self.db_path = os.path.abspath(os.path.normpath(db_path))
         self.db_dir = os.path.dirname(self.db_path)
         self.timezone = pytz.timezone('Asia/Singapore')
-
         self.logger = logger
         self.logger.info(f"Initializing database handler for path: {self.db_path}")
+
+        # Load key.txt encryption key
+        self.PREDEFINED_KEY = self._load_encryption_key(key_file)
 
         # Setup encryption and database
         self._setup_encryption()
         self._setup_database()
+
+    def _load_encryption_key(self, key_file):
+        """Load encryption key from a file"""
+        try:
+            key_path = os.path.abspath(os.path.normpath(key_file))
+            self.logger.debug(f"Loading encryption key from: {key_path}")
+
+            if key_file.endswith(".txt"):
+                with open(key_path, "r") as f:
+                    return f.read().strip().encode()
+            else:
+                raise ValueError("Unsupported key file format.")
+        except Exception as e:
+            self.logger.error(f"Error loading encryption key: {str(e)}")
+            raise
 
     def _setup_encryption(self):
         try:
@@ -49,8 +64,10 @@ class MorseDBHandler:
 
             with sqlite3.connect(self.db_path, timeout=20) as conn:
                 cursor = conn.cursor()
+
+                # messages table
                 self.logger.debug("Creating messages table if not exists")
-                cursor.execute('''
+                cursor.execute(''' 
                     CREATE TABLE IF NOT EXISTS messages (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         vessel_sender TEXT NOT NULL,
@@ -60,11 +77,89 @@ class MorseDBHandler:
                         timestamp DATETIME DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now', 'localtime'))
                     )
                 ''')
+
+                # login table
+                self.logger.debug("Creating login table if not exists")
+                cursor.execute(''' 
+                    CREATE TABLE IF NOT EXISTS login (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        username TEXT NOT NULL UNIQUE,
+                        password TEXT NOT NULL
+                    )
+                ''')
+
+                # Commit the changes explicitly
                 conn.commit()
                 self.logger.info("Database setup completed successfully")
         except sqlite3.Error as e:
             self.logger.error(f"Database setup error: {str(e)}")
             raise
+
+    @staticmethod
+    def hash_password(password):
+        """Encrypt a password using bcrypt."""
+        return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+    @staticmethod
+    def verify_password(password, hashed_password):
+        """Verify a password against a hashed password."""
+        return bcrypt.checkpw(password.encode(), hashed_password.encode())
+
+    def create_user(self, username, password):
+        """Create a new user with encrypted password."""
+        self.logger.info(f"Creating user: {username}")
+        try:
+            hashed_password = self.hash_password(password)
+            with sqlite3.connect(self.db_path, timeout=20) as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT INTO login (username, password) VALUES (?, ?)
+                ''', (username, hashed_password))
+                conn.commit()
+                self.logger.info(f"User {username} created successfully")
+                return True
+        except sqlite3.Error as e:
+            self.logger.error(f"Error creating user: {str(e)}")
+            return False
+
+    def authenticate_user(self, username, password):
+        """Authenticate a user with their username and password."""
+        self.logger.info(f"Authenticating user: {username}")
+        try:
+            with sqlite3.connect(self.db_path, timeout=20) as conn:
+                cursor = conn.cursor()
+                cursor.execute('SELECT password FROM login WHERE username = ?', (username,))
+                row = cursor.fetchone()
+                if row and self.verify_password(password, row[0]):
+                    self.logger.info(f"User {username} authenticated successfully")
+                    return True
+                else:
+                    self.logger.warning(f"Authentication failed for user: {username}")
+                    return False
+        except sqlite3.Error as e:
+            self.logger.error(f"Error during authentication: {str(e)}")
+            return False
+    
+    def get_all_users(self):
+        """Retrieve all users and their encrypted passwords."""
+        try:
+            with sqlite3.connect(self.db_path, timeout=20) as conn:
+                cursor = conn.cursor()
+                cursor.execute('SELECT id, username, password FROM login')
+                rows = cursor.fetchall()
+                
+                users = []
+                for row in rows:
+                    id, username, hashed_password = row
+                    users.append({
+                        'id': id,
+                        'username': username,
+                        'password': hashed_password  # Do not decrypt as bcrypt is a hash, not reversible
+                    })
+                return users
+        except sqlite3.Error as e:
+            self.logger.error(f"Error retrieving users: {str(e)}")
+            return []
 
     def encrypt_message(self, message):
         try:
@@ -77,6 +172,21 @@ class MorseDBHandler:
         except Exception as e:
             self.logger.error(f"Encryption error: {str(e)}")
             return None
+        
+    def _connect_to_db(self):
+        """Establish a connection to the SQLite database."""
+        conn = sqlite3.connect(self.db_path)
+        return conn
+        
+    def get_user_password_hash(self, username):
+        conn = self._connect_to_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT password FROM login WHERE username = ?", (username,))
+        result = cursor.fetchone()
+        conn.close()
+        if result:
+            return result[0]  
+        return None
 
     def get_unique_vessels(self):
         query = "SELECT DISTINCT vessel_sender FROM messages"
@@ -206,9 +316,9 @@ def get_database_path():
         logger.error(f"Error getting database path: {str(e)}")
         raise
 
-def decode_messages(vessel_sender_filter=None, vessel_recipient_filter=None):
+def decode_messages(vessel_sender_filter=None, vessel_recipient_filter=None, key_file="key.txt"):
     db_path = get_database_path()
-    db = MorseDBHandler(db_path)
+    db = MorseDBHandler(db_path, key_file)
     messages = db.get_messages(vessel_sender_filter, vessel_recipient_filter)
     headers = ['ID', 'Vessel Sender', 'Vessel Recipient', 'Message Received', 'Message Sent', 'Timestamp']
     rows = [
@@ -217,14 +327,32 @@ def decode_messages(vessel_sender_filter=None, vessel_recipient_filter=None):
     ]
     print(tabulate(rows, headers=headers, tablefmt='grid'))
 
+def view_login(key_file="key.txt"):
+        db_path = get_database_path()
+        db = MorseDBHandler(db_path, key_file)
+        users = db.get_all_users()
+        
+        headers = ['ID', 'Username', 'Encrypted Password']
+        rows = [
+            [user['id'], user['username'], user['password']]
+            for user in users
+        ]
+        print(tabulate(rows, headers=headers, tablefmt='grid'))
+
 def main():
     print("\nMorse Code Database Decoder")
+    db_path = get_database_path()
+    key_file = os.path.join(os.path.dirname(db_path), "key.txt")  
+
     while True:
-        print("\n1. View all messages\n2. Exit")
+        print("\n1. View all messages\n2. View login\n3. Exit")
         choice = input("Enter choice: ").strip()
+        
         if choice == '1':
-            decode_messages()
+            decode_messages(key_file=key_file)
         elif choice == '2':
+            view_login(key_file=key_file)  
+        elif choice == '3':
             break
 
 if __name__ == "__main__":
