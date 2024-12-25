@@ -106,6 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
         key.addEventListener('click', function(event) {
             // Prevent the click from bubbling up and closing panels
             if (event.target.classList.contains('switch')) {
+                event.preventDefault();  // Prevent the "SPECIAL" or "NORMAL" text from being inserted
                 return;  // Do nothing if the switch button is clicked
             }
 
@@ -114,6 +115,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const keyText = this.textContent;
             const activeInputField = activeInput;  // Get the active input field (search or message)
 
+            // Check if the keyText is a space or an empty string, do nothing if it is
+            if (keyText === ' ' || keyText === '') {
+                return;  // If the key should not do anything (space or empty), just return
+            }
+
+            // Handle delete, space, or other key inputs
             if (this.classList.contains('delete')) {
                 activeInputField.value = activeInputField.value.slice(0, -1);  // Remove last character
             } else if (this.classList.contains('space')) {
@@ -141,6 +148,7 @@ document.addEventListener('DOMContentLoaded', function() {
             event.preventDefault();
         });
     });
+
 
     // Keyboard for special characters
     document.querySelector('.switch').addEventListener('click', function(event) {
