@@ -52,6 +52,10 @@ body {
     margin-left: 250px;
 }
 
+.hidden {
+    display: none !important;
+}
+
 .header {
     padding: 10px;
     border-bottom: 1px solid #ccc;
@@ -277,6 +281,10 @@ body {
     margin-bottom: 2px;
 }
 
+.keyboard-row.hidden {
+    display: none ;
+}
+
 .key {
     flex: 1;
     margin: 1px;
@@ -327,6 +335,10 @@ body {
 
 .key.delete,
 .key.space {
+    background: #f5f5f5;
+}
+
+.key.switch {
     background: #f5f5f5;
 }
 

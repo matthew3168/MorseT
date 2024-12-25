@@ -117,26 +117,28 @@
         </div>
 
         <div class="keyboard">
+            <!-- normal keyboard -->
             <div class="keyboard-row">
                 {% for key in '1234567890' %}
-                <button class="key" data-key="{{ key }}">{{ key }}</button>
+                <button class="key" data-key="{{ key }}" data-original="{{ key }}">{{ key }}</button>
                 {% endfor %}
             </div>
             <div class="keyboard-row">
                 {% for key in 'QWERTYUIOP' %}
-                <button class="key" data-key="{{ key }}">{{ key }}</button>
+                <button class="key" data-key="{{ key }}" data-original="{{ key }}">{{ key }}</button>
                 {% endfor %}
             </div>
             <div class="keyboard-row">
                 {% for key in 'ASDFGHJKL' %}
-                <button class="key" data-key="{{ key }}">{{ key }}</button>
+                <button class="key" data-key="{{ key }}" data-original="{{ key }}">{{ key }}</button>
                 {% endfor %}
                 <button class="key delete" data-key="delete">DELETE</button>
             </div>
             <div class="keyboard-row">
-                {% for key in 'ZXCVBNM,.' %}
-                <button class="key" data-key="{{ key }}">{{ key }}</button>
+                {% for key in 'ZXCVBNM.' %}
+                <button class="key" data-key="{{ key }}" data-original="{{ key }}">{{ key }}</button>
                 {% endfor %}
+                <button class="key switch" data-key="switch">SPECIAL</button>
                 <button class="key space" data-key="space">SPACE</button>
             </div>
         </div>

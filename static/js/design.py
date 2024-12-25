@@ -104,7 +104,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle virtual keyboard input
     document.querySelectorAll('.key').forEach(key => {
         key.addEventListener('click', function(event) {
-            event.stopPropagation();  // Prevent the click from bubbling up and closing panels
+            // Prevent the click from bubbling up and closing panels
+            if (event.target.classList.contains('switch')) {
+                return;  // Do nothing if the switch button is clicked
+            }
+
+            event.stopPropagation();  // Prevent the click from bubbling up
 
             const keyText = this.textContent;
             const activeInputField = activeInput;  // Get the active input field (search or message)
@@ -131,11 +136,91 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 });
             }
-            
+
             // Prevent default keydown event from triggering another input
             event.preventDefault();
         });
     });
+
+    // Keyboard for special characters
+    document.querySelector('.switch').addEventListener('click', function(event) {
+        event.stopPropagation();  // Prevent the click from propagating to the input handling
+
+        // Prevent text input into the input field
+        event.preventDefault();
+
+        toggleSpecial();  // Toggle the special characters mode
+    });
+
+    const specialCharMap = {
+        '1': '&',
+        '2': "'",
+        '3': '@',
+        '4': '(',
+        '5': ')',
+        '6': ':',
+        '7': '=',
+        '8': '!',
+        '9': '-',
+        '0': '×',
+        'Q': '%',
+        'W': '+',
+        'E': '"',
+        'R': '?',
+        'T': '/',
+        'Y': ' ',
+        'U': ' ',
+        'I': ' ',
+        'O': ' ',
+        'P': ' ',
+        'A': ' ',
+        'S': ' ',
+        'D': ' ',
+        'F': ' ',
+        'G': ' ',
+        'H': ' ',
+        'J': ' ',
+        'K': ' ',
+        'L': ' ',
+        'Z': ' ',
+        'X': ' ',
+        'C': ' ',
+        'V': ' ',
+        'B': ' ',
+        'N': ' ',
+        'M': ' ',
+        '.': ',',
+        ' ': ' ',
+    };
+
+    let isSpecial = false;
+
+    // Function to toggle the special characters and the "SPECIAL" button text
+    function toggleSpecial() {
+        const keys = document.querySelectorAll('.key');
+        const switchButton = document.querySelector('.switch');
+
+        keys.forEach(key => {
+            const originalKeyText = key.getAttribute('data-original');
+            const currentKeyText = key.textContent;
+
+            if (specialCharMap[originalKeyText]) {
+                // Toggle between special characters and regular ones
+                key.textContent = isSpecial ? originalKeyText : specialCharMap[originalKeyText];
+            }
+        });
+
+        // Toggle the "SPECIAL"/"NORMAL" button text
+        if (isSpecial) {
+            switchButton.textContent = 'SPECIAL';
+        } else {
+            switchButton.textContent = 'NORMAL';
+        }
+
+        // Toggle the isSpecial flag
+        isSpecial = !isSpecial;
+    }
+
 
 
     // Event listener for search input to filter vessel names (case-insensitive)
@@ -228,34 +313,36 @@ document.addEventListener('DOMContentLoaded', function() {
     const rightPanelToggle = document.getElementById('rightPanelToggle');
     let rightPanelOpen = false;
 
+    const keys = document.querySelectorAll('.key');
+
     if (rightPanelToggle) {  // Check if element exists
-        rightPanelToggle.addEventListener('click', function(event) {
-            event.stopPropagation();
-            rightPanelOpen = !rightPanelOpen;
-            
-            if (rightPanel) {
-                rightPanel.classList.toggle('active');
-                mainContent.classList.toggle('shifted-right');
-                
-                // Change arrow direction
-                rightPanelToggle.textContent = rightPanelOpen ? '→' : '←';
-            }
-        });
+    rightPanelToggle.addEventListener('click', function(event) {
+        event.stopPropagation();
+        rightPanelOpen = !rightPanelOpen;
 
-        // Close panels except when clicking the keyboard
-        document.addEventListener('click', function(event) {
-            if (!expandedPanel.contains(event.target) &&
-                !expandBtn.contains(event.target) &&
-                !durationPanel.contains(event.target) &&
-                !expandDRBtn.contains(event.target) &&
-                !repeatPanel.contains(event.target) &&
-                !expandRBtn.contains(event.target) &&
-                !keys.contains(event.target)) { // Don't close when clicking on keyboard keys
-                closeAllPanels();
-            }
-        });
-    }
+        if (rightPanel) {
+            rightPanel.classList.toggle('active');
+            mainContent.classList.toggle('shifted-right');
 
+            // Change arrow direction
+            rightPanelToggle.textContent = rightPanelOpen ? '→' : '←';
+        }
+    });
+
+    // Close panels except when clicking the keyboard
+    document.addEventListener('click', function(event) {
+        const clickedInsideKeys = Array.from(keys).some(key => key.contains(event.target));
+        if (!expandedPanel.contains(event.target) &&
+            !expandBtn.contains(event.target) &&
+            !durationPanel.contains(event.target) &&
+            !expandDRBtn.contains(event.target) &&
+            !repeatPanel.contains(event.target) &&
+            !expandRBtn.contains(event.target) &&
+            !clickedInsideKeys) { // Don't close when clicking on keyboard keys
+            closeAllPanels();
+        }
+    });
+}
 
     const currentChannelDisplay = document.getElementById('currentChannel');
     let menuOpen = false;
