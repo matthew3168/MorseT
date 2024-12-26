@@ -9,9 +9,10 @@
 <body>
     <div id="menuPanel" class="menu-panel">
         <div class="search"><form action="#"><input type="text" placeholder="Search Vessels.." name="search"></form></div>
-        <div class="vessel-btn all-channels" data-vessel="All" style="color: #fff;">All Channels</div>
         {% for vessel in vessels %}
+            {% if vessel.lower() not in ['all', 'all channels'] %}
         <div class="vessel-btn" data-vessel="{{ vessel }}" style="color: #fff;">{{ vessel }}</div>
+            {% endif %}
         {% endfor %}
     </div>
 
@@ -27,7 +28,7 @@
         </div>
         <div class="header">
             <button class="menu-btn" aria-label="Toggle Menu">MENU</button>
-            <span id="currentChannel">{{ current_channel }}</span>
+            <span id="currentChannel">{{ vessels[0] if vessels else '' }}</span>
             <a href="{{ url_for('logout') }}" class="menu-btn" style="margin-left: auto;">LOGOUT</a>
         </div>
 
@@ -59,14 +60,15 @@
             {% endfor %}
         </div>
 
-        <!-- emergency words -->
         <div class="expanded-panel" id="expandedPanel" style="display: none;">
             <div class="panel-content">
                 <div class="quick-messages">
                     <button class="quick-msg-btn">SOS</button>
                     <button class="quick-msg-btn">MAYDAY</button>
-                    <button class="quick-msg-btn">WARNING</button>
                     <button class="quick-msg-btn">REQUESTING ASSISTANCE</button>
+                    <button class="quick-msg-btn">WARNING</button>
+                    <button class="quick-msg-btn">CAUTION</button>
+                    <button class="quick-msg-btn">ALERT</button>
                     <button class="quick-msg-btn">ACKNOWLEDGED</button>
                     <button class="quick-msg-btn">MAINTAINING COURSE</button>
                     <button class="quick-msg-btn">POSITION UPDATE</button>

@@ -189,9 +189,18 @@ class MorseDBHandler:
         return None
 
     def get_unique_vessels(self):
-        query = "SELECT DISTINCT vessel_sender FROM messages"
-        result = self.execute_query(query)
-        return [row[0] for row in result]  
+        """Get list of unique vessels excluding 'All' and 'All Channels'"""
+        self.logger.info("Retrieving list of unique vessels")
+        try:
+            with sqlite3.connect(self.db_path, timeout=20) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT DISTINCT vessel_sender FROM messages WHERE vessel_sender NOT IN ('All', 'All Channels')")
+                vessels = [row[0] for row in cursor.fetchall()]
+                self.logger.debug(f"Retrieved {len(vessels)} unique vessels")
+                return vessels
+        except sqlite3.Error as e:
+            self.logger.error(f"Error retrieving unique vessels: {str(e)}")
+            return []
     
     def execute_query(self, query, params=()):
         """Execute a query on the database and return the result."""

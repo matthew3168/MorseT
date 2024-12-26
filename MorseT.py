@@ -49,7 +49,7 @@ class FlaskMorseApp:
                 sock.close()
         except Exception as e:
             return False, f"Connection error: {str(e)}"
-        
+                    
     def setup_routes(self):
         """Set up all Flask routes."""
         
@@ -86,6 +86,8 @@ class FlaskMorseApp:
 
             messages = self.get_messages()
             vessels = self.db.get_unique_vessels()
+
+            vessels = [vessel for vessel in vessels if vessel.lower() not in ['all', 'all channels']]
             
             vessel_messages = {}
 
@@ -110,6 +112,10 @@ class FlaskMorseApp:
             """Get messages for a specific vessel."""
             if 'user' not in session:
                 return redirect(url_for('login'))
+            
+            if vessel.lower() in ['all', 'all channels']:
+                return jsonify([])
+                
             messages = self.db.get_messages(vessel_sender=vessel, vessel_recipient=None)
             return jsonify(self.format_messages(messages))
         

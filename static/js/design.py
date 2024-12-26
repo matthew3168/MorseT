@@ -6,68 +6,40 @@ def get_js_content():
     """
     return """
 document.addEventListener('DOMContentLoaded', function() {
-
-    const EMERGENCY_KEYWORDS = ['SOS', 'MAYDAY'];
-    const WARNING_KEYWORDS = ['WARNING', 'REQUESTING ASSISTANCE'];
+ 
+    const EMERGENCY_KEYWORDS = ['SOS', 'MAYDAY', 'REQUESTING ASSISTANCE'];
+    const WARNING_KEYWORDS = ['WARNING', 'CAUTION', 'ALERT'];
 
     function applyMessageHighlighting(messageElement, messageText) {
-    const upperText = messageText.toUpperCase();
-    
-    if (EMERGENCY_KEYWORDS.some(keyword => upperText.includes(keyword))) {
-        messageElement.classList.add('emergency');
-    } else if (WARNING_KEYWORDS.some(keyword => upperText.includes(keyword))) {
-        messageElement.classList.add('warning');
-    }
-}
-
-    function updateMessages(vessel) {
-        const url = vessel && vessel !== 'All' ? 
-            `/get_messages/${encodeURIComponent(vessel)}` : 
-            '/get_messages';
+        console.log('Checking message:', messageText);
         
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                const chatArea = document.querySelector('.chat-area');
-                chatArea.innerHTML = '';
-                
-                const messages = Array.isArray(data) ? data : data.messages;
-                
-                messages.reverse().forEach(message => {
-                    const messageGroup = document.createElement('div');
-                    messageGroup.className = 'message-group';
-                    
-                    let messageHTML = '';
-                    
-                    if (message.message_received !== '[No Message Received]') {
-                        const receivedDiv = document.createElement('div');
-                        receivedDiv.className = 'message-bubble message-received';
-                        receivedDiv.textContent = message.message_received;
-                        applyMessageHighlighting(receivedDiv, message.message_received);
-                        messageHTML += receivedDiv.outerHTML;
-                    }
-                    
-                    if (message.message_sent && message.message_sent !== '[No Message Sent]') {
-                        const sentDiv = document.createElement('div');
-                        if (message.message_received !== '[No Message Received]') {
-                            sentDiv.textContent = `Response: ${message.message_sent}`;
-                        } else {
-                            sentDiv.textContent = message.message_sent;
-                        }
-                        sentDiv.className = 'message-bubble message-sent';
-                        applyMessageHighlighting(sentDiv, message.message_sent);
-                        messageHTML += sentDiv.outerHTML;
-                    }
-                    
-                    messageHTML += `<div class="timestamp ${message.message_sent && message.message_sent != '[No Message Sent]' ? 'timestamp-sent' : 'timestamp-received'}">${message.formatted_time}</div>`;
-                    
-                    messageGroup.innerHTML = messageHTML;
-                    chatArea.appendChild(messageGroup);
-                });
-                
-                chatArea.scrollTop = chatArea.scrollHeight;
-            });
+        const upperText = messageText.toUpperCase();
+        
+        if (EMERGENCY_KEYWORDS.some(keyword => upperText.includes(keyword))) {
+            console.log('Emergency message detected');
+            messageElement.classList.add('emergency');
+        } else if (WARNING_KEYWORDS.some(keyword => upperText.includes(keyword))) {
+            console.log('Warning message detected');
+            messageElement.classList.add('warning');
+        }
     }
+
+    // Add CSS styles programmatically to ensure highlighting takes precedence
+    const style = document.createElement('style');
+    style.textContent = `
+        .message-bubble.message-received.emergency {
+            background-color: #ff4444 !important;
+            color: white !important;
+            border: 1px solid #cc0000 !important;
+        }
+
+        .message-bubble.message-received.warning {
+            background-color: #ffbb33 !important;
+            color: black !important;
+            border: 1px solid #cc9900 !important;
+        }
+    `;
+    document.head.appendChild(style);
 
     // Menu search functionality
     const searchInput = document.querySelector('.search input[type="text"]');
@@ -76,7 +48,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let activeInput = searchInput;
 
-    // Focus on the search input when 'Tab' is pressed
     searchInput.addEventListener('focus', () => {
         activeInput = searchInput;
     });
@@ -85,12 +56,102 @@ document.addEventListener('DOMContentLoaded', function() {
         activeInput = messageInput;
     });
 
-    // Listen for keydown event to toggle between inputs
+    // Function to update messages
+    function updateMessages(vessel) {
+        console.log('Updating messages for vessel:', vessel);
+
+        if (!vessel || vessel.toLowerCase() === 'all' || vessel.toLowerCase() === 'all channels') {
+            console.log('No valid vessel selected');
+            return;
+        }
+        
+        const url = `/get_messages/${encodeURIComponent(vessel)}`;
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                const chatArea = document.querySelector('.chat-area');
+                chatArea.innerHTML = '';
+                
+                const messages = Array.isArray(data) ? data : data.messages;
+                console.log('Received messages:', messages);
+                
+                messages.reverse().forEach(message => {
+                    const messageGroup = document.createElement('div');
+                    messageGroup.className = 'message-group';
+                    
+                    if (message.message_received !== '[No Message Received]') {
+                        const receivedDiv = document.createElement('div');
+                        receivedDiv.className = 'message-bubble message-received';
+                        receivedDiv.textContent = message.message_received;
+                        applyMessageHighlighting(receivedDiv, message.message_received);
+                        messageGroup.appendChild(receivedDiv);
+                        console.log('Created received message:', message.message_received);
+                    }
+                    
+                    if (message.message_sent && message.message_sent !== '[No Message Sent]') {
+                        const sentDiv = document.createElement('div');
+                        sentDiv.className = 'message-bubble message-sent';
+                        if (message.message_received !== '[No Message Received]') {
+                            sentDiv.textContent = `Response: ${message.message_sent}`;
+                        } else {
+                            sentDiv.textContent = message.message_sent;
+                        }
+                        applyMessageHighlighting(sentDiv, message.message_sent);
+                        messageGroup.appendChild(sentDiv);
+                        console.log('Created sent message:', message.message_sent);
+                    }
+                    
+                    const timestampDiv = document.createElement('div');
+                    timestampDiv.className = `timestamp ${message.message_sent && message.message_sent !== '[No Message Sent]' ? 'timestamp-sent' : 'timestamp-received'}`;
+                    timestampDiv.textContent = message.formatted_time;
+                    messageGroup.appendChild(timestampDiv);
+                    
+                    chatArea.appendChild(messageGroup);
+                });
+                
+                chatArea.scrollTop = chatArea.scrollHeight;
+            })
+            .catch(error => {
+                console.error('Error updating messages:', error);
+            });
+    }
+
+    // Function to add single message to UI
+    function addMessageToUI(message) {
+        const chatArea = document.querySelector('.chat-area');
+        const messageGroup = document.createElement('div');
+        messageGroup.className = 'message-group';
+        
+        if (message.message_received !== '[No Message Received]') {
+            const receivedDiv = document.createElement('div');
+            receivedDiv.className = 'message-bubble message-received';
+            receivedDiv.textContent = message.message_received;
+            applyMessageHighlighting(receivedDiv, message.message_received);
+            messageGroup.appendChild(receivedDiv);
+        }
+        
+        if (message.message_sent && message.message_sent !== '[No Message Sent]') {
+            const sentDiv = document.createElement('div');
+            sentDiv.className = 'message-bubble message-sent';
+            sentDiv.textContent = message.message_sent;
+            applyMessageHighlighting(sentDiv, message.message_sent);
+            messageGroup.appendChild(sentDiv);
+        }
+        
+        const timestampDiv = document.createElement('div');
+        timestampDiv.className = `timestamp ${message.message_sent ? 'timestamp-sent' : 'timestamp-received'}`;
+        timestampDiv.textContent = message.formatted_time;
+        messageGroup.appendChild(timestampDiv);
+        
+        chatArea.appendChild(messageGroup);
+        chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    // Event listeners for input toggling
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Tab') {
-            event.preventDefault();  // Prevent default tab behavior
-            
-            // Switch between search input and message input
+            event.preventDefault();
             if (activeInput === searchInput) {
                 messageInput.focus();
                 activeInput = messageInput;
@@ -101,153 +162,120 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Handle virtual keyboard input
+    // Handle virtual keyboard
     document.querySelectorAll('.key').forEach(key => {
         key.addEventListener('click', function(event) {
-            // Prevent the click from bubbling up and closing panels
             if (event.target.classList.contains('switch')) {
-                event.preventDefault();  // Prevent the "SPECIAL" or "NORMAL" text from being inserted
-                return;  // Do nothing if the switch button is clicked
+                event.preventDefault();
+                return;
             }
 
-            event.stopPropagation();  // Prevent the click from bubbling up
+            event.stopPropagation();
 
             const keyText = this.textContent;
-            const activeInputField = activeInput;  // Get the active input field (search or message)
+            const activeInputField = activeInput;
 
-            // Check if the keyText is a space or an empty string, do nothing if it is
             if (keyText === ' ' || keyText === '') {
-                return;  // If the key should not do anything (space or empty), just return
+                return;
             }
 
-            // Handle delete, space, or other key inputs
             if (this.classList.contains('delete')) {
-                activeInputField.value = activeInputField.value.slice(0, -1);  // Remove last character
+                activeInputField.value = activeInputField.value.slice(0, -1);
             } else if (this.classList.contains('space')) {
-                activeInputField.value += ' ';  // Add space
+                activeInputField.value += ' ';
             } else {
-                activeInputField.value += keyText;  // Add key text
+                activeInputField.value += keyText;
             }
 
-            activeInputField.focus();  // Keep focus on the active input field
+            activeInputField.focus();
 
-            // Trigger search filtering only when typing in the search input
             if (activeInputField === searchInput) {
                 const searchQuery = searchInput.value.toLowerCase();
                 vesselBtns.forEach(btn => {
                     const vesselName = btn.textContent.toLowerCase();
-                    if (vesselName.includes(searchQuery)) {
-                        btn.style.display = 'block';
-                    } else {
-                        btn.style.display = 'none';
-                    }
+                    btn.style.display = vesselName.includes(searchQuery) ? 'block' : 'none';
                 });
             }
 
-            // Prevent default keydown event from triggering another input
             event.preventDefault();
         });
     });
 
-
-    // Keyboard for special characters
-    document.querySelector('.switch').addEventListener('click', function(event) {
-        event.stopPropagation();  // Prevent the click from propagating to the input handling
-
-        // Prevent text input into the input field
-        event.preventDefault();
-
-        toggleSpecial();  // Toggle the special characters mode
-    });
-
+    // Special characters keyboard
     const specialCharMap = {
-        '1': '&',
-        '2': "'",
-        '3': '@',
-        '4': '(',
-        '5': ')',
-        '6': ':',
+        '1': '&', 
+        '2': "'", 
+        '3': '@', 
+        '4': '(', 
+        '5': ')', 
+        '6': ':', 
         '7': '=',
-        '8': '!',
-        '9': '-',
-        '0': '×',
-        'Q': '%',
-        'W': '+',
-        'E': '"',
+        '8': '!', 
+        '9': '-', 
+        '0': '×', 
+        'Q': '%', 
+        'W': '+', 
+        'E': '"', 
         'R': '?',
-        'T': '/',
-        'Y': ' ',
-        'U': ' ',
-        'I': ' ',
-        'O': ' ',
-        'P': ' ',
+        'T': '/', 
+        'Y': ' ', 
+        'U': ' ', 
+        'I': ' ', 
+        'O': ' ', 
+        'P': ' ', 
         'A': ' ',
-        'S': ' ',
-        'D': ' ',
-        'F': ' ',
-        'G': ' ',
-        'H': ' ',
-        'J': ' ',
+        'S': ' ', 
+        'D': ' ', 
+        'F': ' ', 
+        'G': ' ', 
+        'H': ' ', 
+        'J': ' ', 
         'K': ' ',
-        'L': ' ',
-        'Z': ' ',
-        'X': ' ',
-        'C': ' ',
-        'V': ' ',
-        'B': ' ',
+        'L': ' ', 
+        'Z': ' ', 
+        'X': ' ', 
+        'C': ' ', 
+        'V': ' ', 
+        'B': ' ', 
         'N': ' ',
-        'M': ' ',
-        '.': ',',
-        ' ': ' ',
+        'M': ' ', 
+        '.': ',', 
+        ' ': ' '
     };
 
     let isSpecial = false;
 
-    // Function to toggle the special characters and the "SPECIAL" button text
+    document.querySelector('.switch').addEventListener('click', function(event) {
+        event.stopPropagation();
+        event.preventDefault();
+        toggleSpecial();
+    });
+
     function toggleSpecial() {
         const keys = document.querySelectorAll('.key');
         const switchButton = document.querySelector('.switch');
 
         keys.forEach(key => {
             const originalKeyText = key.getAttribute('data-original');
-            const currentKeyText = key.textContent;
-
             if (specialCharMap[originalKeyText]) {
-                // Toggle between special characters and regular ones
                 key.textContent = isSpecial ? originalKeyText : specialCharMap[originalKeyText];
             }
         });
 
-        // Toggle the "SPECIAL"/"NORMAL" button text
-        if (isSpecial) {
-            switchButton.textContent = 'SPECIAL';
-        } else {
-            switchButton.textContent = 'NORMAL';
-        }
-
-        // Toggle the isSpecial flag
+        switchButton.textContent = isSpecial ? 'SPECIAL' : 'NORMAL';
         isSpecial = !isSpecial;
     }
 
-
-
-    // Event listener for search input to filter vessel names (case-insensitive)
+    // Search functionality
     searchInput.addEventListener('input', function(event) {
-        // Get the search query (case-insensitive)
         const searchQuery = searchInput.value.toLowerCase();
-        
         vesselBtns.forEach(btn => {
             const vesselName = btn.textContent.toLowerCase();
-            // Show or hide vessel buttons based on the search query
-            if (vesselName.includes(searchQuery)) {
-                btn.style.display = 'block';  // Show vessel
-            } else {
-                btn.style.display = 'none';   // Hide vessel
-            }
+            btn.style.display = vesselName.includes(searchQuery) ? 'block' : 'none';
         });
     });
 
-    // Duration Slider Functionality
+    // Duration slider functionality
     const slider = document.getElementById('durationSlider');
     const speedDisplay = document.getElementById('speedDisplay');
     const settingDisplay = document.getElementById('settingDisplay');
@@ -256,7 +284,6 @@ document.addEventListener('DOMContentLoaded', function() {
         let speed = '';
         let speedColor = '';
 
-        // Determine speed category based on slider value
         if (value == 50) {
             speed = 'Fast';
             speedColor = 'blue';
@@ -271,30 +298,28 @@ document.addEventListener('DOMContentLoaded', function() {
             speedColor = 'red';
         }
 
-        // Update the display text
-    speedDisplay.innerHTML = `<p>Speed:</p><span style="color: ${speedColor};">${speed}</span>`;
-    settingDisplay.innerHTML = `<p>Current Setting:</p> <span style="color: ${speedColor};">${value}ms</span>`;
-
+        speedDisplay.innerHTML = `<p>Speed:</p><span style="color: ${speedColor};">${speed}</span>`;
+        settingDisplay.innerHTML = `<p>Current Setting:</p> <span style="color: ${speedColor};">${value}ms</span>`;
     }
 
-    // Initial display when the page loads
-    updateSliderDisplay(slider.value);
+    if (slider) {
+        updateSliderDisplay(slider.value);
+        slider.addEventListener('input', function() {
+            updateSliderDisplay(this.value);
+        });
+    }
 
-    // Add event listener for slider input
-    slider.addEventListener('input', function () {
-        updateSliderDisplay(this.value);
-    });
-    
+    // Quick message buttons highlighting
     document.querySelectorAll('.quick-msg-btn').forEach(btn => {
-    const buttonText = btn.textContent.toUpperCase();
-    if (EMERGENCY_KEYWORDS.some(keyword => buttonText === keyword)) {
-        btn.classList.add('emergency');
-    } else if (WARNING_KEYWORDS.some(keyword => buttonText === keyword)) {
-        btn.classList.add('warning');
-    }
+        const buttonText = btn.textContent.toUpperCase();
+        if (EMERGENCY_KEYWORDS.some(keyword => buttonText === keyword)) {
+            btn.classList.add('emergency');
+        } else if (WARNING_KEYWORDS.some(keyword => buttonText === keyword)) {
+            btn.classList.add('warning');
+        }
     });
 
-    // Vessel selection functionality
+    // Vessel selection
     vesselBtns.forEach(btn => {
         btn.addEventListener('click', function() {
             vesselBtns.forEach(b => b.classList.remove('selected'));
@@ -319,108 +344,52 @@ document.addEventListener('DOMContentLoaded', function() {
     const mainContent = document.getElementById('mainContent');
     const rightPanel = document.getElementById('rightPanel');
     const rightPanelToggle = document.getElementById('rightPanelToggle');
-    let rightPanelOpen = false;
-
-    const keys = document.querySelectorAll('.key');
-
-    if (rightPanelToggle) {  // Check if element exists
-    rightPanelToggle.addEventListener('click', function(event) {
-        event.stopPropagation();
-        rightPanelOpen = !rightPanelOpen;
-
-        if (rightPanel) {
-            rightPanel.classList.toggle('active');
-            mainContent.classList.toggle('shifted-right');
-
-            // Change arrow direction
-            rightPanelToggle.textContent = rightPanelOpen ? '→' : '←';
-        }
-    });
-
-    // Close panels except when clicking the keyboard
-    document.addEventListener('click', function(event) {
-        const clickedInsideKeys = Array.from(keys).some(key => key.contains(event.target));
-        if (!expandedPanel.contains(event.target) &&
-            !expandBtn.contains(event.target) &&
-            !durationPanel.contains(event.target) &&
-            !expandDRBtn.contains(event.target) &&
-            !repeatPanel.contains(event.target) &&
-            !expandRBtn.contains(event.target) &&
-            !clickedInsideKeys) { // Don't close when clicking on keyboard keys
-            closeAllPanels();
-        }
-    });
-}
-
     const currentChannelDisplay = document.getElementById('currentChannel');
     let menuOpen = false;
+    let rightPanelOpen = false;
 
-    // Panel expansion functionality
+    if (rightPanelToggle) {
+        rightPanelToggle.addEventListener('click', function(event) {
+            event.stopPropagation();
+            rightPanelOpen = !rightPanelOpen;
+            
+            if (rightPanel) {
+                rightPanel.classList.toggle('active');
+                mainContent.classList.toggle('shifted-right');
+                rightPanelToggle.textContent = rightPanelOpen ? '→' : '←';
+            }
+        });
+    }
+
+    // Panel functionality
     const expandBtn = document.getElementById('expandBtn');
     const expandedPanel = document.getElementById('expandedPanel');
-    const quickMsgBtns = document.querySelectorAll('.quick-msg-btn');
+    const durationPanel = document.getElementById('durationPanel');
+    const repeatPanel = document.getElementById('repeatPanel');
+    const expandDRBtn = document.getElementById('expandDRBtn');
+    const expandRBtn = document.getElementById('expandRBtn');
     let isPanelOpen = false;
 
-    // Menu button click handler
-    menuBtn.addEventListener('click', function(event) {
-        event.stopPropagation();
-        menuOpen = !menuOpen;
-        
-        menuPanel.classList.toggle('active');
-        mainContent.classList.toggle('shifted');
-        
-        fetch('/toggle_menu', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ menuOpen: menuOpen })
-        });
-    });
-
-    // Close menu when clicking outside
-    document.addEventListener('click', function(event) {
-        if (menuOpen && 
-            !menuPanel.contains(event.target) && 
-            !menuBtn.contains(event.target)) {
-            menuOpen = false;
-            menuPanel.classList.remove('active');
-            mainContent.classList.remove('shifted');
-            
-            fetch('/toggle_menu', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ menuOpen: false })
-            });
-        }
-    });
-
-    // Function to close all panels
     function closeAllPanels() {
         expandedPanel.style.display = 'none';
         durationPanel.style.display = 'none';
         repeatPanel.style.display = 'none';
-
         expandBtn.classList.remove('active');
         expandDRBtn.classList.remove('active');
         expandRBtn.classList.remove('active');
         isPanelOpen = false;
-
     }
 
-    // Expand panel button click handler
+    // Panel event listeners
     expandBtn.addEventListener('click', function(event) {
         event.stopPropagation();
         const isCurrentlyOpen = expandedPanel.style.display === 'block';
-        closeAllPanels(); // Close all panels first
-        isPanelOpen = !isCurrentlyOpen; // Toggle the target panel
+        closeAllPanels();
+        isPanelOpen = !isCurrentlyOpen;
         expandedPanel.style.display = isPanelOpen ? 'block' : 'none';
         this.classList.toggle('active', isPanelOpen);
     });
 
-    // Duration panel
     expandDRBtn.addEventListener('click', function(event) {
         event.stopPropagation();
         const isCurrentlyOpen = durationPanel.style.display === 'block';
@@ -430,7 +399,6 @@ document.addEventListener('DOMContentLoaded', function() {
         this.classList.toggle('active', isPanelOpen);
     });
 
-    // Repeat
     expandRBtn.addEventListener('click', function(event) {
         event.stopPropagation();
         const isCurrentlyOpen = repeatPanel.style.display === 'block';
@@ -440,58 +408,32 @@ document.addEventListener('DOMContentLoaded', function() {
         this.classList.toggle('active', isPanelOpen);
     });
 
-    // Repeat Slider functionality
-    const repeatSlider = document.getElementById('repeatSlider'); 
-    const settingDisplayRepeat = document.getElementById('settingDisplay2');  // Updated reference for the repeat slider
-
-    function updateRepeatText() {
-        const value = repeatSlider.value;  
-        console.log('Slider value:', value);  // Debugging: Log the slider value
-        const timeText = value === "1" ? "time" : "times";
-        settingDisplayRepeat.textContent = `Repeat: ${value} ${timeText}`;  // Update the display text
-    }
-
-    // Add event listener to update the text when the repeat slider value changes
-    repeatSlider.addEventListener('input', updateRepeatText);
-
-    // Initialize the repeat text on page load
-    updateRepeatText();
-    
-    // Close panels when clicking outside
-    document.addEventListener('click', function(event) {
-        if (!expandedPanel.contains(event.target) && 
-            !expandBtn.contains(event.target) &&
-            !durationPanel.contains(event.target) &&
-            !expandDRBtn.contains(event.target) &&
-            !repeatPanel.contains(event.target) &&
-            !expandRBtn.contains(event.target)) {
-            closeAllPanels();
-        }
-    });
-    
-
-    // Quick message button functionality
+    // Quick messages
+    const quickMsgBtns = document.querySelectorAll('.quick-msg-btn');
     quickMsgBtns.forEach(btn => {
         btn.addEventListener('click', function() {
             messageInput.value = this.textContent;
             messageInput.focus();
-            // Close the panel after selection
             isPanelOpen = false;
             expandedPanel.style.display = 'none';
             expandBtn.classList.remove('active');
         });
     });
+    
+     const repeatSlider = document.getElementById('repeatSlider');
+    const settingDisplay2 = document.getElementById('settingDisplay2');
 
-    // Close panel when clicking outside
-    document.addEventListener('click', function(event) {
-        if (isPanelOpen && 
-            !expandedPanel.contains(event.target) && 
-            !expandBtn.contains(event.target)) {
-            isPanelOpen = false;
-            expandedPanel.style.display = 'none';
-            expandBtn.classList.remove('active');
-        }
-    });
+    function updateRepeatText() {
+        const value = repeatSlider.value;
+        console.log('Slider value:', value);
+        const timeText = value === "1" ? "time" : "times";
+        settingDisplay2.textContent = `Repeat: ${value} ${timeText}`;
+    }
+
+    if (repeatSlider) {
+        repeatSlider.addEventListener('input', updateRepeatText);
+        updateRepeatText();
+    }
 
     // Message sending functionality
     const sendBtn = document.querySelector('.send-btn');
@@ -500,37 +442,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedVessel = document.querySelector('.vessel-btn.selected');
         return selectedVessel ? selectedVessel.getAttribute('data-vessel') : null;
     }
-    
-    function addMessageToUI(message) {
-        const chatArea = document.querySelector('.chat-area');
-        const messageGroup = document.createElement('div');
-        messageGroup.className = 'message-group';
-        
-        let messageHTML = '';
-        
-        if (message.message_received !== '[No Message Received]') {
-            const receivedDiv = document.createElement('div');
-            receivedDiv.className = 'message-bubble message-received';
-            receivedDiv.textContent = message.message_received;
-            applyMessageHighlighting(receivedDiv, message.message_received);
-            messageHTML += receivedDiv.outerHTML;
-        }
-        
-        if (message.message_sent && message.message_sent !== '[No Message Sent]') {
-            const sentDiv = document.createElement('div');
-            sentDiv.className = 'message-bubble message-sent';
-            sentDiv.textContent = message.message_sent;
-            applyMessageHighlighting(sentDiv, message.message_sent);
-            messageHTML += sentDiv.outerHTML;
-        }
-        
-        messageHTML += `<div class="timestamp ${message.message_sent ? 'timestamp-sent' : 'timestamp-received'}">${message.formatted_time}</div>`;
-        
-        messageGroup.innerHTML = messageHTML;
-        chatArea.appendChild(messageGroup);
-        chatArea.scrollTop = chatArea.scrollHeight;
-    }
-    
+
     sendBtn.addEventListener('click', async function() {
         const message = messageInput.value.trim();
         const currentChannel = getCurrentChannel();
@@ -583,7 +495,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
             
             if (data.status !== 'success') {
-            console.error('Error sending message:', data.message);
+                console.error('Error sending message:', data.message);
             } 
         } catch (error) {
             console.error('Error sending message:', error);
@@ -597,68 +509,55 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Message sending functionality
-    sendBtn.addEventListener('click', function() {
-        // Get values from the input fields and sliders
-        const message = messageInput.value.trim();
-        const duration = durationSlider.value; // Duration from the slider (in ms)
-        const repeat = repeatSlider.value; // Repeat count from the slider
+    // Menu button click handler
+    menuBtn.addEventListener('click', function(event) {
+        event.stopPropagation();
+        menuOpen = !menuOpen;
+        
+        menuPanel.classList.toggle('active');
+        mainContent.classList.toggle('shifted');
+        
+        fetch('/toggle_menu', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ menuOpen: menuOpen })
+        });
+    });
 
-        // Check if message is not empty
-        if (message) {
-            // Create a JSON object with the required fields
-            const jsonMessage = {
-                message: message,
-                duration: parseInt(duration), 
-                repeat: parseInt(repeat) 
-            };
-
-            // Log the JSON message for debugging
-            console.log("Created JSON message:", JSON.stringify(jsonMessage));
+    // Close menu when clicking outside
+    document.addEventListener('click', function(event) {
+        if (menuOpen && 
+            !menuPanel.contains(event.target) && 
+            !menuBtn.contains(event.target)) {
+            menuOpen = false;
+            menuPanel.classList.remove('active');
+            mainContent.classList.remove('shifted');
+            
+            fetch('/toggle_menu', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ menuOpen: false })
+            });
         }
     });
 
-    // Function to update messages
-    function updateMessages(vessel) {
-        const url = vessel && vessel !== 'All' ? 
-            `/get_messages/${encodeURIComponent(vessel)}` : 
-            '/get_messages';
-        
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                const chatArea = document.querySelector('.chat-area');
-                chatArea.innerHTML = '';
-                
-                const messages = Array.isArray(data) ? data : data.messages;
-                
-                messages.reverse().forEach(message => {
-                    const messageGroup = document.createElement('div');
-                    messageGroup.className = 'message-group';
-                    
-                    let messageHTML = '';
-                    
-                    if (message.message_received !== '[No Message Received]') {
-                        messageHTML += `<div class="message-bubble message-received">${message.message_received}</div>`;
-                    }
-                    
-                    if (message.message_sent && message.message_sent !== '[No Message Sent]') {
-                        if (message.message_received !== '[No Message Received]') {
-                            messageHTML += `<div class="message-bubble message-sent">Response: ${message.message_sent}</div>`;
-                        } else {
-                            messageHTML += `<div class="message-bubble message-sent">${message.message_sent}</div>`;
-                        }
-                    }
-                    
-                    messageHTML += `<div class="timestamp ${message.message_sent && message.message_sent != '[No Message Sent]' ? 'timestamp-sent' : 'timestamp-received'}">${message.formatted_time}</div>`;
-                    
-                    messageGroup.innerHTML = messageHTML;
-                    chatArea.appendChild(messageGroup);
-                });
-                
-                chatArea.scrollTop = chatArea.scrollHeight;
-            });
-    }
+    // Close panels when clicking outside
+    document.addEventListener('click', function(event) {
+        const clickedInsideKeys = Array.from(document.querySelectorAll('.key')).some(key => key.contains(event.target));
+        if (!expandedPanel.contains(event.target) &&
+            !expandBtn.contains(event.target) &&
+            !durationPanel.contains(event.target) &&
+            !expandDRBtn.contains(event.target) &&
+            !repeatPanel.contains(event.target) &&
+            !expandRBtn.contains(event.target) &&
+            !clickedInsideKeys) {
+            closeAllPanels();
+        }
+    });
 
     // Set initial channel and load messages
     const initialChannel = currentChannelDisplay.textContent || 'All';

@@ -559,3 +559,14 @@ body {
 .right-panel-close:hover {
     background: #444;
 }
+
+.message-bubble.emergency {
+    background-color: #ff4444 !important;
+    color: white !important;
+}
+
+.message-bubble.warning {
+    background-color: #ffbb33 !important;
+    color: black !important;
+}
+
