@@ -498,15 +498,6 @@ body {
     transition: right 0.4s ease;
 }
 
-.right-panel-content {
-    padding: 40px;
-    color: white;
-    height: 100%;
-    overflow-y: auto;
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-}
 /* Remove the shifted-right class as it's no longer needed */
 .main-content.shifted-right {
     margin-right: 0;
@@ -570,3 +561,25 @@ body {
     color: black !important;
 }
 
+.right-panel-content h2 {
+    text-align: center;
+    margin: 0;
+    padding: 20px 0;
+    color: white;
+    font-size: 24px;
+    font-weight: 500;
+    border-bottom: 1px solid #333;
+}
+
+.right-panel-content {
+    padding: 20px 40px 40px;
+    color: white;
+    height: 100%;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
