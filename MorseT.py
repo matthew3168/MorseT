@@ -32,7 +32,7 @@ class FlaskMorseApp:
             # Create a TCP/IP socket
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             # Connect to ESP32
-            server_address = ('192.168.1.169', 8888)  
+            server_address = ('192.168.1.5', 8888)  
             sock.settimeout(5)  # Set timeout to 5 seconds
             sock.connect(server_address)
             
