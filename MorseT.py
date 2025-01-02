@@ -8,6 +8,7 @@ import pytz
 from cryptography.fernet import Fernet
 import bcrypt
 import socket
+from ESP32_Static_IP import IP_ADDRESS, PORT
 
 class FlaskMorseApp:
     def __init__(self):
@@ -32,7 +33,7 @@ class FlaskMorseApp:
             # Create a TCP/IP socket
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             # Connect to ESP32
-            server_address = ('192.168.1.5', 8888)  
+            server_address = (IP_ADDRESS, PORT)  
             sock.settimeout(5)  # Set timeout to 5 seconds
             sock.connect(server_address)
             

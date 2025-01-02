@@ -437,6 +437,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Message sending functionality
     const sendBtn = document.querySelector('.send-btn');
+    const SEND_DELAY = 3000; // 3 seconds delay
+    let canSend = true;
+
+    function disableSendButton(button) {
+    button.disabled = true;
+    button.style.backgroundColor = '#cccccc';
+    button.style.cursor = 'not-allowed';
+    canSend = false;
+    
+    setTimeout(() => {
+        button.disabled = false;
+        button.style.backgroundColor = 'cornflowerblue';
+        button.style.cursor = 'pointer';
+        canSend = true;
+    }, SEND_DELAY);
+    }
     
     function getCurrentChannel() {
         const selectedVessel = document.querySelector('.vessel-btn.selected');
@@ -444,6 +460,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     sendBtn.addEventListener('click', async function() {
+        if (!canSend) {
+        return; // Don't process if we can't send yet
+        }
+
         const message = messageInput.value.trim();
         const currentChannel = getCurrentChannel();
         
@@ -453,6 +473,8 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Please select a channel first');
             return;
         }
+        // Disable the send button immediately
+        disableSendButton(this);
         
         // Get values from sliders
         const duration = document.getElementById('durationSlider').value;
