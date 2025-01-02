@@ -437,10 +437,73 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Message sending functionality
     const sendBtn = document.querySelector('.send-btn');
-    const SEND_DELAY = 3000; // 3 seconds delay
+
+    function calculateTransmissionTime(message, duration, repeat) {
+        const ditDuration = parseInt(duration); // Base unit time in ms
+        let totalUnits = 0;
+
+        // Morse code patterns and their unit lengths
+        const MORSE_PATTERNS = {
+            'A': '.-',     'B': '-...',   'C': '-.-.', 
+            'D': '-..',    'E': '.',      'F': '..-.',
+            'G': '--.',    'H': '....',   'I': '..',
+            'J': '.---',   'K': '-.-',    'L': '.-..',
+            'M': '--',     'N': '-.',     'O': '---',
+            'P': '.--.',   'Q': '--.-',   'R': '.-.',
+            'S': '...',    'T': '-',      'U': '..-',
+            'V': '...-',   'W': '.--',    'X': '-..-',
+            'Y': '-.--',   'Z': '--...',
+            '0': '-----',  '1': '.----',  '2': '..---',
+            '3': '...--',  '4': '....-',  '5': '.....',
+            '6': '-....',  '7': '--...',  '8': '---..',
+            '9': '----.',
+            '.': '.-.-.-', ',': '--..--', ':': '---...',
+            '?': '..--..', '&': '.-...', "'": '.----.',
+            '@': '.--.-.', ')': '-.--.-', '(': '-.--.',
+            '=': '-...-',  '!': '-.-.--', '-': '-....-',
+            '+': '.-.-.', '/': '-..-.'
+        };
+
+        // Calculate units for each character
+        for (let i = 0; i < message.length; i++) {
+            const char = message[i].toUpperCase();
+            
+            if (char === ' ') {
+                // Word space (7 units)
+                totalUnits += 7;
+            } else if (MORSE_PATTERNS[char]) {
+                const pattern = MORSE_PATTERNS[char];
+                
+                // Calculate units for dots and dashes
+                for (let j = 0; j < pattern.length; j++) {
+                    // Dot = 1 unit, Dash = 3 units
+                    totalUnits += (pattern[j] === '.') ? 1 : 3;
+                    
+                    // Add 1 unit space between elements (dots/dashes)
+                    if (j < pattern.length - 1) totalUnits += 1;
+                }
+                
+                // Add 3 units space between characters
+                if (i < message.length - 1) totalUnits += 3;
+            }
+    }
+
+    // Calculate total time including repeats
+    let totalTime = totalUnits * ditDuration;
+    
+    // Add time for repeats
+    if (repeat > 1) {
+        // Add 7 units space between repeats
+        totalTime = (totalTime + (7 * ditDuration)) * repeat;
+    }
+
+    // Add a small buffer (500ms)
+    return totalTime + 500;
+    }
+
     let canSend = true;
 
-    function disableSendButton(button) {
+    function disableSendButton(button, delay) {
     button.disabled = true;
     button.style.backgroundColor = '#cccccc';
     button.style.cursor = 'not-allowed';
@@ -451,7 +514,7 @@ document.addEventListener('DOMContentLoaded', function() {
         button.style.backgroundColor = 'cornflowerblue';
         button.style.cursor = 'pointer';
         canSend = true;
-    }, SEND_DELAY);
+    }, delay);
     }
     
     function getCurrentChannel() {
@@ -473,13 +536,17 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Please select a channel first');
             return;
         }
-        // Disable the send button immediately
-        disableSendButton(this);
         
         // Get values from sliders
         const duration = document.getElementById('durationSlider').value;
         const repeat = document.getElementById('repeatSlider').value;
-            
+       
+        // Calculate transmission time
+        const transmissionTime = calculateTransmissionTime(message, duration, repeat);
+        
+        // Disable the send button immediately
+        disableSendButton(this, transmissionTime);
+
         // Create a temporary message object for immediate display
         const tempMessage = {
             message_sent: message,
