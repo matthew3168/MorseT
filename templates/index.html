@@ -32,6 +32,8 @@
             <a href="{{ url_for('logout') }}" class="menu-btn" style="margin-left: auto;">LOGOUT</a>
         </div>
 
+        <div id="countdownTimer" class="countdown-timer"></div>
+        
         <div class="chat-area">
             {% for message in messages|reverse %}
             <div class="message-group">

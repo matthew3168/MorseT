@@ -593,3 +593,42 @@ body {
 .send-btn {
     transition: background-color 0.3s ease, opacity 0.3s ease;
 }
+
+.countdown-timer {
+    position: fixed;
+    top: 60px; /* Position below header */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    z-index: 1000;
+    display: none;
+    animation: fadeInOut 0.5s ease-in-out;
+}
+
+.countdown-timer.active {
+    display: block;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+    100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.main-content.shifted .countdown-timer {
+    left: calc(50% + 125px); /* Half of menu width */
+}
+
+@media (max-width: 768px) {
+    .countdown-timer {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+    
+    .main-content.shifted .countdown-timer {
+        left: 50%; /* Reset on mobile */
+    }
+}

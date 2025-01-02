@@ -501,6 +501,32 @@ document.addEventListener('DOMContentLoaded', function() {
     return totalTime + 500;
     }
 
+    function startCountdownTimer(duration) {
+        const timerElement = document.getElementById('countdownTimer');
+        const endTime = Date.now() + duration;
+        
+        // Show and activate timer
+        timerElement.classList.add('active');
+        
+        // Update timer every 100ms
+        const timerInterval = setInterval(() => {
+            const timeLeft = Math.ceil((endTime - Date.now()) / 1000);
+            
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                timerElement.classList.remove('active');
+                return;
+            }
+            
+            // Format time remaining
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            const timeString = `Transmitting: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            timerElement.textContent = timeString;
+        }, 100);
+    }
+
     let canSend = true;
 
     function disableSendButton(button, delay) {
@@ -543,6 +569,9 @@ document.addEventListener('DOMContentLoaded', function() {
        
         // Calculate transmission time
         const transmissionTime = calculateTransmissionTime(message, duration, repeat);
+
+        // Start countdown timer
+        startCountdownTimer(transmissionTime);
         
         // Disable the send button immediately
         disableSendButton(this, transmissionTime);
