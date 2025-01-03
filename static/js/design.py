@@ -41,6 +41,50 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     document.head.appendChild(style);
 
+    // Camera feed functionality
+    function initializeCameraFeed() {
+        const cameraFeed = document.getElementById('cameraFeed');
+        const cameraStatus = document.getElementById('cameraStatus');
+        let retryCount = 0;
+        const maxRetries = 3;
+
+        function checkCameraConnection() {
+            if (retryCount >= maxRetries) {
+                cameraStatus.style.display = 'block';
+                cameraStatus.textContent = 'Could not connect to camera feed';
+                return;
+            }
+
+            cameraStatus.style.display = 'block';
+            
+            // Check if iframe loaded successfully
+            cameraFeed.onload = function() {
+                cameraStatus.style.display = 'none';
+            };
+
+            cameraFeed.onerror = function() {
+                retryCount++;
+                if (retryCount < maxRetries) {
+                    cameraStatus.textContent = `Retrying connection... (${retryCount}/${maxRetries})`;
+                    setTimeout(checkCameraConnection, 2000);
+                } else {
+                    cameraStatus.textContent = 'Could not connect to camera feed';
+                }
+            };
+        }
+
+        // Start checking camera connection when panel is opened
+        document.getElementById('rightPanelToggle').addEventListener('click', function() {
+            if (rightPanel.classList.contains('active')) {
+                checkCameraConnection();
+            }
+        });
+    }
+
+    // Initialize camera feed
+    initializeCameraFeed();
+
+
     // Menu search functionality
     const searchInput = document.querySelector('.search input[type="text"]');
     const messageInput = document.getElementById('messageInput');

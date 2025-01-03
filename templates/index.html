@@ -20,6 +20,22 @@
         <div id="rightPanel" class="right-panel">
             <div class="right-panel-content">
                 <h2>Live Camera Feed</h2>
+                <div class="camera-container">
+                    <iframe
+                        id="cameraFeed"
+                        class="camera-feed"
+                        src="http://192.168.1.200"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
+                        allowfullscreen>
+                    </iframe>
+                    <div id="cameraStatus" class="camera-status">Connecting to camera...</div>
+
+                </div>
+
+
+
+
+
             </div>
         </div>
         <button id="rightPanelToggle" class="right-panel-toggle">←</button>
