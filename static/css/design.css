@@ -61,12 +61,17 @@ body {
     border-bottom: 1px solid #ccc;
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: space-between;
     font-size: 12px;
     background-color: white;
 }
 
-.menu-btn {
+.right-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.menu-btn, .export-btn {
     padding: 2px 8px;
     cursor: pointer;
     border: 1px solid #ccc;
@@ -76,7 +81,7 @@ body {
     color: black;
 }
 
-.menu-btn:hover {
+.menu-btn:hover, .export-btn:hover {
     background: #f0f0f0;
 }
 

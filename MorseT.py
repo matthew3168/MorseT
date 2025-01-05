@@ -1,6 +1,9 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, Response
 from database_handler2 import MorseDBHandler
 from static.js.design import setup_js_route
+from io import StringIO
+from dotenv import load_dotenv
+import csv
 import os
 import json
 from datetime import datetime
@@ -12,13 +15,17 @@ from ESP32_Static_IP import IP_ADDRESS, PORT
 
 class FlaskMorseApp:
     def __init__(self):
+        load_dotenv(dotenv_path='login_encryption/.env')
         self.app = Flask(__name__)
-        self.app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default_fallback_key')
+        self.app.secret_key = os.getenv('FLASK_SECRET_KEY')
         self.app.config['SESSION_TYPE'] = 'filesystem'
         setup_js_route(self.app)
         self.db = self.initialize_database()
         self.timezone = pytz.timezone('Asia/Singapore')
         self.setup_routes()
+
+        if self.app.secret_key is None:
+            raise ValueError("secret key is not set in the environment variables!")
     
     def initialize_database(self):
         """Initialize the database connection."""
@@ -216,6 +223,37 @@ class FlaskMorseApp:
                 return jsonify({'status': 'success'})
             except Exception as e:
                 return jsonify({'status': 'error', 'message': str(e)}), 500
+            
+        @self.app.route('/export')
+        def export():
+            morse_app = FlaskMorseApp()
+            messages = morse_app.get_messages()
+            
+            #string IO to write CSV content
+            si = StringIO()
+            cw = csv.writer(si)
+            
+            #header row based on table columns
+            cw.writerow(['id', 'vessel_sender', 'vessel_recipient', 'message_received', 'message_sent', 'timestamp'])
+            
+            #write each message
+            for message in messages:
+                cw.writerow([
+                    message['id'], 
+                    message['vessel_sender'], 
+                    message['vessel_recipient'], 
+                    message['message_received'], 
+                    message['message_sent'], 
+                    message['timestamp']
+                ])
+            
+            #move to the beginning of the StringIO object
+            si.seek(0)
+            
+            #use response to send the CSV file as a response
+            return Response(si.getvalue(), mimetype='text/csv', headers={
+                'Content-Disposition': 'attachment;filename=messages.csv'
+            })
     
     def format_messages(self, messages):
         """Format messages for display."""

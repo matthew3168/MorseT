@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MorseT</title>
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.jpg') }}" type="image/jpg">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/design.css') }}">
 </head>
 <body>
@@ -33,9 +34,6 @@
                 </div>
 
 
-
-
-
             </div>
         </div>
         <button id="rightPanelToggle" class="right-panel-toggle">←</button>
@@ -45,7 +43,10 @@
         <div class="header">
             <button class="menu-btn" aria-label="Toggle Menu">MENU</button>
             <span id="currentChannel">{{ vessels[0] if vessels else '' }}</span>
-            <a href="{{ url_for('logout') }}" class="menu-btn" style="margin-left: auto;">LOGOUT</a>
+            <div class="right-buttons">
+                <a href="{{ url_for('export') }}" class="export-btn">EXPORT</a>
+                <a href="{{ url_for('logout') }}" class="menu-btn">LOGOUT</a>
+            </div>
         </div>
 
         <div id="countdownTimer" class="countdown-timer"></div>
