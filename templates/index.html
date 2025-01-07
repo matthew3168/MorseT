@@ -44,9 +44,14 @@
             <button class="menu-btn" aria-label="Toggle Menu">MENU</button>
             <span id="currentChannel">{{ vessels[0] if vessels else '' }}</span>
             <div class="right-buttons">
+                <button id="searchMessagesBtn" class="search-btn">SEARCH</button>
                 <a href="{{ url_for('export') }}" class="export-btn">EXPORT</a>
                 <a href="{{ url_for('logout') }}" class="menu-btn">LOGOUT</a>
             </div>
+        </div>
+
+        <div id="messageSearchPanel" class="message-search-panel" style="display: none;">
+            <input type="text" id="messageSearchInput" class="message-search-input" placeholder="Search messages...">
         </div>
 
         <div id="countdownTimer" class="countdown-timer"></div>

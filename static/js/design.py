@@ -84,7 +84,46 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize camera feed
     initializeCameraFeed();
 
+    // Message search panel functionality
+    const searchMessagesBtn = document.getElementById('searchMessagesBtn');
+    const messageSearchPanel = document.getElementById('messageSearchPanel');
+    const messageSearchInput = document.getElementById('messageSearchInput');
+    const chatArea = document.querySelector('.chat-area');
+    let searchPanelVisible = false;
 
+    searchMessagesBtn.addEventListener('click', function() {
+        searchPanelVisible = !searchPanelVisible;
+        messageSearchPanel.style.display = searchPanelVisible ? 'block' : 'none';
+        chatArea.classList.toggle('with-search', searchPanelVisible);
+        if (searchPanelVisible) {
+            messageSearchInput.focus();
+        }
+    });
+
+    messageSearchInput.addEventListener('input', function() {
+        const searchQuery = this.value.toLowerCase();
+        const messageGroups = document.querySelectorAll('.message-group');
+        
+        messageGroups.forEach(group => {
+            const messageContent = group.textContent.toLowerCase();
+            if (messageContent.includes(searchQuery)) {
+                group.classList.remove('hidden');
+            } else {
+                group.classList.add('hidden');
+            }
+        });
+    });
+
+    // Close search panel when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!messageSearchPanel.contains(event.target) && 
+            !searchMessagesBtn.contains(event.target) && 
+            searchPanelVisible) {
+            searchPanelVisible = false;
+            messageSearchPanel.style.display = 'none';
+        }
+    });
+    
     // Menu search functionality
     const searchInput = document.querySelector('.search input[type="text"]');
     const messageInput = document.getElementById('messageInput');
