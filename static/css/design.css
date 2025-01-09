@@ -648,6 +648,12 @@ body {
     overflow: hidden;
 }
 
+#player {
+    width: 100%;
+    height: 100%;
+    background: #000;
+}
+
 .camera-feed {
     width: 100%;
     height: 100%;
@@ -732,4 +738,139 @@ body {
 
 .chat-area.with-search {
     height: calc(100vh - 360px);
+}
+
+/* Theme Variables */
+:root {
+    /* Light Theme (default) */
+    --bg-primary: #f5f5f5;
+    --bg-secondary: #ffffff;
+    --text-primary: #333333;
+    --text-secondary: #666666;
+    --border-color: #cccccc;
+    --menu-bg: #252525;
+    --menu-text: #ffffff;
+    --message-sent: #007bff;
+    --message-received: #ffffff;
+    --timestamp-color: #666666;
+    --input-bg: #ffffff;
+    --button-bg: #ffffff;
+    --button-hover: #f0f0f0;
+    --keyboard-bg: #f5f5f5;
+    --key-bg: #ffffff;
+    --panel-bg: #ffffff;
+}
+
+/* Dark Theme */
+[data-theme="dark"] {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #252525;
+    --text-primary: #ffffff;
+    --text-secondary: #cccccc;
+    --border-color: #404040;
+    --menu-bg: #1a1a1a;
+    --menu-text: #ffffff;
+    --message-sent: #1a73e8;
+    --message-received: #2d2d2d;
+    --timestamp-color: #888888;
+    --input-bg: #2d2d2d;
+    --button-bg: #2d2d2d;
+    --button-hover: #404040;
+    --keyboard-bg: #1a1a1a;
+    --key-bg: #2d2d2d;
+    --panel-bg: #252525;
+}
+
+/* Theme Toggle Button */
+.theme-btn {
+    padding: 2px 8px;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    background: var(--button-bg);
+    font-size: 12px;
+    border-radius: 4px;
+    color: var(--text-primary);
+    transition: background-color 0.3s ease;
+}
+
+.theme-btn:hover {
+    background: var(--button-hover);
+}
+
+/* Update existing components to use variables */
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.main-content {
+    background-color: var(--bg-primary);
+}
+
+.header {
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.menu-panel {
+    background-color: var(--menu-bg);
+    color: var(--menu-text);
+}
+
+.message-bubble.message-sent {
+    background-color: var(--message-sent);
+    color: #ffffff;
+}
+
+.message-bubble.message-received {
+    background-color: var(--message-received);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.timestamp {
+    color: var(--timestamp-color);
+}
+
+.input-container {
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+}
+
+#messageInput {
+    background-color: var(--input-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.keyboard {
+    background-color: var(--keyboard-bg);
+}
+
+.key {
+    background-color: var(--key-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.expanded-panel {
+    background-color: var(--panel-bg);
+    border-top: 1px solid var(--border-color);
+}
+
+/* Dark theme specific button colors */
+[data-theme="dark"] .key.delete,
+[data-theme="dark"] .key.space,
+[data-theme="dark"] .key.switch {
+    color: #ffffff;  /* White text */
+    background: #252525;  /* Dark background */
+    border-color: #404040;  /* Darker border */
+}
+
+/* Hover state for these buttons in dark theme */
+[data-theme="dark"] .key.delete:hover,
+[data-theme="dark"] .key.space:hover,
+[data-theme="dark"] .key.switch:hover {
+    background: #333333;  /* Slightly lighter on hover */
 }

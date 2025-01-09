@@ -41,42 +41,98 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     document.head.appendChild(style);
 
+    // Theme Toggle Functionality
+    const themeToggle = document.getElementById('themeToggle');
+    const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+
+    // Check for saved theme preference or default to user's system preference
+    const currentTheme = localStorage.getItem('theme') || 
+        (prefersDarkScheme.matches ? 'dark' : 'light');
+
+    // Apply the current theme
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+
+    // Theme toggle click handler
+    themeToggle.addEventListener('click', function() {
+        let theme = document.documentElement.getAttribute('data-theme');
+        let newTheme = theme === 'light' ? 'dark' : 'light';
+        
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+        
+        // Animate the transition
+        document.documentElement.style.transition = 'all 0.3s ease';
+        setTimeout(() => {
+            document.documentElement.style.transition = '';
+        }, 300);
+    });
+
+    // Listen for system theme changes
+    prefersDarkScheme.addEventListener('change', (e) => {
+        if (!localStorage.getItem('theme')) {
+            const newTheme = e.matches ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+        }
+    });
+
     // Camera feed functionality
     function initializeCameraFeed() {
-        const cameraFeed = document.getElementById('cameraFeed');
+        const playerElement = document.getElementById('player');
         const cameraStatus = document.getElementById('cameraStatus');
-        let retryCount = 0;
-        const maxRetries = 3;
+        let player = null;
 
-        function checkCameraConnection() {
-            if (retryCount >= maxRetries) {
+        function startStream() {
+            try {
+                // Initialize VLC player
+                player = new WebVLC({
+                    target: playerElement,
+                    options: {
+                        network_caching: 0,
+                        autoplay: true,
+                        mute: true
+                    }
+                });
+
+                // Load the RTSP stream
+                player.load('rtsp://192.168.1.200/video1');
+
+                // Handle player events
+                player.on('playing', () => {
+                    cameraStatus.style.display = 'none';
+                });
+
+                player.on('error', (error) => {
+                    console.error('Player error:', error);
+                    cameraStatus.style.display = 'block';
+                    cameraStatus.textContent = 'Error connecting to camera feed';
+                });
+
+            } catch (error) {
+                console.error('Failed to initialize player:', error);
                 cameraStatus.style.display = 'block';
-                cameraStatus.textContent = 'Could not connect to camera feed';
-                return;
+                cameraStatus.textContent = 'Failed to initialize video player';
             }
-
-            cameraStatus.style.display = 'block';
-            
-            // Check if iframe loaded successfully
-            cameraFeed.onload = function() {
-                cameraStatus.style.display = 'none';
-            };
-
-            cameraFeed.onerror = function() {
-                retryCount++;
-                if (retryCount < maxRetries) {
-                    cameraStatus.textContent = `Retrying connection... (${retryCount}/${maxRetries})`;
-                    setTimeout(checkCameraConnection, 2000);
-                } else {
-                    cameraStatus.textContent = 'Could not connect to camera feed';
-                }
-            };
         }
 
         // Start checking camera connection when panel is opened
         document.getElementById('rightPanelToggle').addEventListener('click', function() {
             if (rightPanel.classList.contains('active')) {
-                checkCameraConnection();
+                startStream();
+            } else {
+                // Stop the stream when panel is closed
+                if (player) {
+                    player.stop();
+                }
+            }
+        });
+
+        // Clean up when leaving the page
+        window.addEventListener('beforeunload', () => {
+            if (player) {
+                player.destroy();
             }
         });
     }

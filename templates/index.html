@@ -6,6 +6,8 @@
     <title>MorseT</title>
     <link rel="icon" href="{{ url_for('static', filename='images/logo.jpg') }}" type="image/jpg">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/design.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/webvlc@1.0.0/dist/webvlc.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@revolist/revogrid@latest/dist/webvlc.js"></script>
 </head>
 <body>
     <div id="menuPanel" class="menu-panel">
@@ -22,18 +24,10 @@
             <div class="right-panel-content">
                 <h2>Live Camera Feed</h2>
                 <div class="camera-container">
-                    <iframe
-                        id="cameraFeed"
-                        class="camera-feed"
-                        src="http://192.168.1.200"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
-                        allowfullscreen>
-                    </iframe>
+                    <div id="player"></div>
                     <div id="cameraStatus" class="camera-status">Connecting to camera...</div>
 
                 </div>
-
-
             </div>
         </div>
         <button id="rightPanelToggle" class="right-panel-toggle">←</button>
@@ -44,6 +38,7 @@
             <button class="menu-btn" aria-label="Toggle Menu">MENU</button>
             <span id="currentChannel">{{ vessels[0] if vessels else '' }}</span>
             <div class="right-buttons">
+                <button id="themeToggle" class="theme-btn">🌙</button>
                 <button id="searchMessagesBtn" class="search-btn">SEARCH</button>
                 <a href="{{ url_for('export') }}" class="export-btn">EXPORT</a>
                 <a href="{{ url_for('logout') }}" class="menu-btn">LOGOUT</a>
