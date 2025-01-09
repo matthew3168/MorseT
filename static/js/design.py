@@ -80,59 +80,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Camera feed functionality
     function initializeCameraFeed() {
-        const playerElement = document.getElementById('player');
+        const cameraFeed = document.getElementById('cameraFeed');
         const cameraStatus = document.getElementById('cameraStatus');
-        let player = null;
+        let retryCount = 0;
+        const maxRetries = 3;
 
-        function startStream() {
-            try {
-                // Initialize VLC player
-                player = new WebVLC({
-                    target: playerElement,
-                    options: {
-                        network_caching: 0,
-                        autoplay: true,
-                        mute: true
-                    }
-                });
-
-                // Load the RTSP stream
-                player.load('rtsp://192.168.1.200/video1');
-
-                // Handle player events
-                player.on('playing', () => {
-                    cameraStatus.style.display = 'none';
-                });
-
-                player.on('error', (error) => {
-                    console.error('Player error:', error);
-                    cameraStatus.style.display = 'block';
-                    cameraStatus.textContent = 'Error connecting to camera feed';
-                });
-
-            } catch (error) {
-                console.error('Failed to initialize player:', error);
+        function checkCameraConnection() {
+            if (retryCount >= maxRetries) {
                 cameraStatus.style.display = 'block';
-                cameraStatus.textContent = 'Failed to initialize video player';
+                cameraStatus.textContent = 'Could not connect to camera feed';
+                return;
             }
+
+            cameraStatus.style.display = 'block';
+            
+            // Check if iframe loaded successfully
+            cameraFeed.onload = function() {
+                cameraStatus.style.display = 'none';
+            };
+
+            cameraFeed.onerror = function() {
+                retryCount++;
+                if (retryCount < maxRetries) {
+                    cameraStatus.textContent = `Retrying connection... (${retryCount}/${maxRetries})`;
+                    setTimeout(checkCameraConnection, 2000);
+                } else {
+                    cameraStatus.textContent = 'Could not connect to camera feed';
+                }
+            };
         }
 
         // Start checking camera connection when panel is opened
         document.getElementById('rightPanelToggle').addEventListener('click', function() {
             if (rightPanel.classList.contains('active')) {
-                startStream();
-            } else {
-                // Stop the stream when panel is closed
-                if (player) {
-                    player.stop();
-                }
-            }
-        });
-
-        // Clean up when leaving the page
-        window.addEventListener('beforeunload', () => {
-            if (player) {
-                player.destroy();
+                checkCameraConnection();
             }
         });
     }

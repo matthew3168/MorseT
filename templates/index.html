@@ -6,8 +6,6 @@
     <title>MorseT</title>
     <link rel="icon" href="{{ url_for('static', filename='images/logo.jpg') }}" type="image/jpg">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/design.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/webvlc@1.0.0/dist/webvlc.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@revolist/revogrid@latest/dist/webvlc.js"></script>
 </head>
 <body>
     <div id="menuPanel" class="menu-panel">
@@ -24,7 +22,13 @@
             <div class="right-panel-content">
                 <h2>Live Camera Feed</h2>
                 <div class="camera-container">
-                    <div id="player"></div>
+                    <iframe
+                        id="cameraFeed"
+                        class="camera-feed"
+                        src="http://192.168.1.200"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
+                        allowfullscreen>
+                    </iframe>
                     <div id="cameraStatus" class="camera-status">Connecting to camera...</div>
 
                 </div>
