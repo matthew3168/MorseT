@@ -1,8 +1,13 @@
-import secrets
+from cryptography.fernet import Fernet
+import os
 
-# Generate a random 32-byte secret key
-secret_key = secrets.token_hex(32)
+# this file is just for generating .env secret keys
 
-# You could save the secret key to an .env file here, e.g.
-with open('.env', 'w') as env_file:
-    env_file.write(f"FLASK_SECRET_KEY={secret_key}")
+# Generate a valid 32-byte Fernet key
+session_secret_key = Fernet.generate_key().decode()  # The key is already base64-encoded and valid
+
+# Open the .env file to append the session secret key
+with open('.env', 'a') as env_file:
+    env_file.write(f"\nSESSION_SECRET_KEY={session_secret_key}")  # Append the session secret key
+
+print("Session secret key saved to .env")

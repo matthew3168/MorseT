@@ -18,8 +18,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 class MorseDBHandler:
-    def __init__(self, db_path, key_file):
+    def __init__(self, db_path, secretsession_key, flask_secret_key):
         """Initialize database handler with encryption"""
         self.db_path = os.path.abspath(os.path.normpath(db_path))
         self.db_dir = os.path.dirname(self.db_path)
@@ -27,12 +28,14 @@ class MorseDBHandler:
         self.logger = logger
         self.logger.info(f"Initializing database handler for path: {self.db_path}")
 
-        # Load key.txt encryption key
-        self.PREDEFINED_KEY = self._load_encryption_key(key_file)
+        # Load keys
+        self.sessionsecret_key = secretsession_key
+        self.flask_secret_key = flask_secret_key
 
         # Setup encryption and database
         self._setup_encryption()
         self._setup_database()
+
 
     def _load_encryption_key(self, key_file):
         """Load encryption key from a file"""
@@ -50,12 +53,9 @@ class MorseDBHandler:
             raise
 
     def _setup_encryption(self):
-        try:
-            self.cipher_suite = Fernet(self.PREDEFINED_KEY)
-            self.logger.debug("Encryption setup completed successfully")
-        except Exception as e:
-            self.logger.error(f"Error setting up encryption: {str(e)}")
-            raise
+        """Set up the cipher suite with the provided encryption key."""
+        self.cipher_suite = Fernet(self.sessionsecret_key)  # For session encryption
+        self.cipher_suite_message = Fernet(self.flask_secret_key)  # For message encryption
 
     def _setup_database(self):
         try:
@@ -114,25 +114,18 @@ class MorseDBHandler:
             self.logger.error(f"Error adding session_id column: {str(e)}")
             raise
 
-    def update_session_id(self, username, session_id):
+    def update_session_id(self, username, encrypted_session_id):
         """Update the session_id for the user."""
         try:
             with sqlite3.connect(self.db_path, timeout=20) as conn:
                 cursor = conn.cursor()
-
-                # Clear the previous session_id before updating it with the new one
-                cursor.execute('''
-                    UPDATE login
-                    SET session_id = NULL
-                    WHERE username = ?
-                ''', (username,))
                 
-                # Now update the new session_id
+                # Update the new session_id
                 cursor.execute('''
                     UPDATE login
                     SET session_id = ?
                     WHERE username = ?
-                ''', (session_id, username))
+                ''', (encrypted_session_id, username))
                 
                 conn.commit()
                 self.logger.info(f"Session ID for user {username} updated successfully.")
@@ -225,24 +218,25 @@ class MorseDBHandler:
             return []
         
     def get_session_id(self, username):
-        """Get the session_id for a user."""
+        """Get the session_id for a user."""        
         try:
             with sqlite3.connect(self.db_path, timeout=20) as conn:
                 cursor = conn.cursor()
                 
-                cursor.execute('''
-                    SELECT session_id
-                    FROM login
-                    WHERE username = ?
-                ''', (username,))
+                cursor.execute('''SELECT session_id FROM login WHERE username = ?''', (username,))
+                row = cursor.fetchone()
                 
-                result = cursor.fetchone()
-                if result:
-                    return result[0]
-                return None
+                if row and row[0]:  # Check if session_id is not None
+                    encrypted_session_id = row[0]
+                    # Decrypt the session ID before returning it
+                    session_id = self.cipher_suite.decrypt(encrypted_session_id.encode()).decode()
+                    return session_id
+                else:
+                    return None
         except sqlite3.Error as e:
             self.logger.error(f"Error fetching session ID: {str(e)}")
             raise
+
 
     def encrypt_message(self, message):
         try:
@@ -299,7 +293,7 @@ class MorseDBHandler:
             if not encrypted_message:
                 self.logger.warning("Attempted to decrypt empty or NULL message")
                 return None
-            decrypted = self.cipher_suite.decrypt(encrypted_message.encode())
+            decrypted = self.cipher_suite_message.decrypt(encrypted_message.encode())  # Use the message cipher suite
             self.logger.debug("Message decrypted successfully")
             return decrypted.decode()
         except InvalidToken:

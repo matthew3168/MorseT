@@ -19,21 +19,26 @@ class FlaskMorseApp:
         load_dotenv(dotenv_path='login_encryption/.env')
         self.app = Flask(__name__)
         self.app.secret_key = os.getenv('FLASK_SECRET_KEY')
+        self.sessionsecret_key = os.getenv('SESSION_SECRET_KEY')  # The encryption key
+        self.flask_secret_key = self.app.secret_key
+        self.cipher_suite = Fernet(self.sessionsecret_key)
         self.app.config['SESSION_TYPE'] = 'filesystem'
         setup_js_route(self.app)
+
+        # Pass the encryption key to the MorseDBHandler
         self.db = self.initialize_database()
+
         self.timezone = pytz.timezone('Asia/Singapore')
         self.setup_routes()
 
         if self.app.secret_key is None:
             raise ValueError("secret key is not set in the environment variables!")
-    
+
     def initialize_database(self):
         """Initialize the database connection."""
-        key_file = os.path.join(os.path.dirname(__file__), "SQLite Database/key.txt")  
         current_dir = os.path.dirname(os.path.abspath(__file__))
         db_path = os.path.join(current_dir, 'SQLite Database', 'morse_decoder.db')
-        return MorseDBHandler(db_path, key_file)
+        return MorseDBHandler(db_path, secretsession_key=self.sessionsecret_key, flask_secret_key=self.flask_secret_key)
 
     def send_to_esp32(self, message_data):
         """Send data to ESP32 via TCP socket."""
@@ -82,8 +87,11 @@ class FlaskMorseApp:
                     # Generate a unique session ID
                     session_id = str(uuid.uuid4())
 
+                    # Encrypt the session ID
+                    encrypted_session_id = self.cipher_suite.encrypt(session_id.encode()).decode()  # Encrypt and convert to string
+
                     # Store the session ID in the database
-                    self.db.update_session_id(username, session_id)
+                    self.db.update_session_id(username, encrypted_session_id)
 
                     # Store session information
                     session['user'] = username
