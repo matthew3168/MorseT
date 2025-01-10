@@ -78,6 +78,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Session logout when tab is exited
+    window.addEventListener('beforeunload', function(event) {
+        fetch('/logout', {
+            method: 'GET', // Use a GET request for logging out
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin' // Include cookies in the request
+        });
+    });
+
     // Camera feed functionality
     function initializeCameraFeed() {
         const cameraFeed = document.getElementById('cameraFeed');

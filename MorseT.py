@@ -3,6 +3,7 @@ from database_handler2 import MorseDBHandler
 from static.js.design import setup_js_route
 from io import StringIO
 from dotenv import load_dotenv
+import uuid
 import csv
 import os
 import json
@@ -72,8 +73,23 @@ class FlaskMorseApp:
                 
                 # Verify password using bcrypt
                 if user_password_hash and bcrypt.checkpw(password.encode(), user_password_hash.encode()):
+                    # Check if the user is already logged in (check for session_id in the database)
+                    existing_session_id = self.db.get_session_id(username)
+                    if existing_session_id:                       
+                        # Deny login if the session_id already exists (user is logged in on another device)
+                        return render_template('auth.html', error_message="This account is already logged in on another device.")
+                    
+                    # Generate a unique session ID
+                    session_id = str(uuid.uuid4())
+
+                    # Store the session ID in the database
+                    self.db.update_session_id(username, session_id)
+
+                    # Store session information
                     session['user'] = username
                     session['menu_state'] = False  # Menu state for user session
+                    session['session_id'] = session_id  # Store the session_id in Flask session
+
                     return redirect(url_for('index'))
                 else:
                     return render_template('auth.html', error_message="Invalid credentials")
@@ -83,6 +99,10 @@ class FlaskMorseApp:
         @self.app.route('/logout')
         def logout():
             """Handle logout functionality."""
+            if 'user' in session:
+                username = session['user']
+                self.db.clear_session_id(username)
+            
             session.clear()
             return redirect(url_for('login'))
         

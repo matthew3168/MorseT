@@ -95,6 +95,69 @@ class MorseDBHandler:
             self.logger.error(f"Database setup error: {str(e)}")
             raise
 
+    # if session_id column is missing in login table
+    def _add_session_id_column(self):
+        try:
+            with sqlite3.connect(self.db_path, timeout=20) as conn:
+                cursor = conn.cursor()
+                
+                # Add session_id column if it doesn't already exist
+                cursor.execute('''
+                    ALTER TABLE login
+                    ADD COLUMN session_id TEXT;
+                ''')
+
+                # Commit the changes explicitly
+                conn.commit()
+                self.logger.info("Session ID column added successfully.")
+        except sqlite3.Error as e:
+            self.logger.error(f"Error adding session_id column: {str(e)}")
+            raise
+
+    def update_session_id(self, username, session_id):
+        """Update the session_id for the user."""
+        try:
+            with sqlite3.connect(self.db_path, timeout=20) as conn:
+                cursor = conn.cursor()
+
+                # Clear the previous session_id before updating it with the new one
+                cursor.execute('''
+                    UPDATE login
+                    SET session_id = NULL
+                    WHERE username = ?
+                ''', (username,))
+                
+                # Now update the new session_id
+                cursor.execute('''
+                    UPDATE login
+                    SET session_id = ?
+                    WHERE username = ?
+                ''', (session_id, username))
+                
+                conn.commit()
+                self.logger.info(f"Session ID for user {username} updated successfully.")
+        except sqlite3.Error as e:
+            self.logger.error(f"Error updating session ID: {str(e)}")
+            raise
+
+    def clear_session_id(self, username):
+        """Clear the session_id for the user."""
+        try:
+            with sqlite3.connect(self.db_path, timeout=20) as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                    UPDATE login
+                    SET session_id = NULL
+                    WHERE username = ?
+                ''', (username,))
+                
+                conn.commit()
+                self.logger.info(f"Session ID for user {username} cleared successfully.")
+        except sqlite3.Error as e:
+            self.logger.error(f"Error clearing session ID: {str(e)}")
+            raise
+
     @staticmethod
     def hash_password(password):
         """Encrypt a password using bcrypt."""
@@ -160,6 +223,26 @@ class MorseDBHandler:
         except sqlite3.Error as e:
             self.logger.error(f"Error retrieving users: {str(e)}")
             return []
+        
+    def get_session_id(self, username):
+        """Get the session_id for a user."""
+        try:
+            with sqlite3.connect(self.db_path, timeout=20) as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                    SELECT session_id
+                    FROM login
+                    WHERE username = ?
+                ''', (username,))
+                
+                result = cursor.fetchone()
+                if result:
+                    return result[0]
+                return None
+        except sqlite3.Error as e:
+            self.logger.error(f"Error fetching session ID: {str(e)}")
+            raise
 
     def encrypt_message(self, message):
         try:
