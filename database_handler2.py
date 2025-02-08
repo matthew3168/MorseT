@@ -2,6 +2,7 @@ import os
 import sqlite3
 import logging
 import bcrypt
+from dotenv import load_dotenv
 from datetime import datetime
 import pytz
 from cryptography.fernet import Fernet, InvalidToken
@@ -402,10 +403,11 @@ def get_database_path():
         logger.error(f"Error getting database path: {str(e)}")
         raise
 
-def decode_messages(vessel_sender_filter=None, vessel_recipient_filter=None, key_file="key.txt"):
+def decode_messages(vessel_sender_filter=None, vessel_recipient_filter=None, secretsession_key=None, flask_secret_key=None):
     db_path = get_database_path()
-    db = MorseDBHandler(db_path, key_file)
+    db = MorseDBHandler(db_path, secretsession_key, flask_secret_key)  
     messages = db.get_messages(vessel_sender_filter, vessel_recipient_filter)
+    
     headers = ['ID', 'Vessel Sender', 'Vessel Recipient', 'Message Received', 'Message Sent', 'Timestamp']
     rows = [
         [msg['id'], msg['vessel_sender'], msg['vessel_recipient'], msg['message_received'], msg['message_sent'], msg['timestamp']]
@@ -413,31 +415,42 @@ def decode_messages(vessel_sender_filter=None, vessel_recipient_filter=None, key
     ]
     print(tabulate(rows, headers=headers, tablefmt='grid'))
 
-def view_login(key_file="key.txt"):
-        db_path = get_database_path()
-        db = MorseDBHandler(db_path, key_file)
-        users = db.get_all_users()
-        
-        headers = ['ID', 'Username', 'Encrypted Password']
-        rows = [
-            [user['id'], user['username'], user['password']]
-            for user in users
-        ]
-        print(tabulate(rows, headers=headers, tablefmt='grid'))
+def view_login(secretsession_key, flask_secret_key):
+    db_path = get_database_path()
+    db = MorseDBHandler(db_path, secretsession_key, flask_secret_key)  
+    users = db.get_all_users()
+
+    headers = ['ID', 'Username', 'Encrypted Password']
+    rows = [
+        [user['id'], user['username'], user['password']]
+        for user in users
+    ]
+    print(tabulate(rows, headers=headers, tablefmt='grid'))
 
 def main():
     print("\nMorse Code Database Decoder")
+    
+    # Load environment variables from the .env file
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'login_encryption', '.env')
+    load_dotenv(env_path)
+    
+    # Get the keys from environment variables
+    secretsession_key = os.getenv('SESSION_SECRET_KEY').encode()
+    flask_secret_key = os.getenv('FLASK_SECRET_KEY').encode()
+    
+    if not secretsession_key or not flask_secret_key:
+        print("Error: Required environment variables are not set")
+        return
+        
     db_path = get_database_path()
-    key_file = os.path.join(os.path.dirname(db_path), "key.txt")  
-
+    
     while True:
         print("\n1. View all messages\n2. View login\n3. Exit")
         choice = input("Enter choice: ").strip()
-        
         if choice == '1':
-            decode_messages(key_file=key_file)
+            decode_messages(secretsession_key=secretsession_key, flask_secret_key=flask_secret_key)
         elif choice == '2':
-            view_login(key_file=key_file)  
+            view_login(secretsession_key, flask_secret_key)
         elif choice == '3':
             break
 
